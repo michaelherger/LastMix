@@ -8,8 +8,9 @@ my $log = logger('plugin.lastmix');
 
 my @serviceHandlers = qw(
 	Plugins::LastMix::Services::Tidal
-#	Plugins::LastMix::Services::Spotify
+	Plugins::LastMix::Services::Spotify
 	Plugins::LastMix::Services::Deezer
+	Plugins::LastMix::Services::Napster
 );
 
 my $serviceHandler;
@@ -40,7 +41,7 @@ sub extractTrack {
 	# XXX - apply some more smarts, like eg. "Tony Levin Band" vs. "Tony Levin", "Remaster" etc.
 	# do some title/artist cleanup
 	$candidates = [ grep {
-		$_->{title} !~ /karaoke|sound.a.like|as.made.famous/ && $_->{artist} !~ /karaoke/
+		$_->{title} !~ /karaoke|sound.a.like|as.made.famous|original.*perfor.*by/i && $_->{artist} !~ /karaoke/
 	} map {
 		my $title = $class->cleanupTitle( lc($_->{title}) );
 		my $artist = lc($_->{artist});
@@ -157,8 +158,15 @@ sub gotResults {
 		my $protocol = $params->{class}->protocol;
 		
 		push @$candidates, map {
+			# some service handlers return one single line rather than two with title and artist
+			if ( !($_->{line1} && $_->{line2}) ) {
+				my ($title, $artist) = split(/ by /i, $_->{name});
+				$_->{line1} ||= $title;
+				$_->{line2} ||= $artist;
+			}
+			
 			{
-				title  => $_->{line1},
+				title  => $_->{line1} || $_->{name},
 				artist => $_->{line2},
 				url    => $_->{play},
 			}
@@ -177,6 +185,7 @@ sub extractTrack {
 
 sub gotError {
 	my ($error, $params) = @_;
+	$log->error('LastMix Service lookup failed: ' . $error);
 	$params->{class}->cb->();
 }
 
@@ -205,7 +214,7 @@ sub protocol { 'wimp' }
 
 sub searchUrl {
 	my ($class) = @_;
-	sprintf('/api/wimp/v1/opml/search?q=%s', $class->args->{title});
+	sprintf('/api/wimp/v1/opml/search?q=%s', URI::Escape::uri_escape_utf8($class->args->{title}));
 }
 
 1;
@@ -230,13 +239,74 @@ sub protocol { 'deezer' }
 
 sub searchUrl {
 	my ($class) = @_;
-	sprintf('/api/deezer/v1/opml/search_tracks?q=%s', $class->args->{title});
+	sprintf('/api/deezer/v1/opml/search_tracks?q=%s', URI::Escape::uri_escape_utf8($class->args->{title}));
 }
 
 1;
 
+
 package Plugins::LastMix::Services::Spotify;
 
 use base qw(Plugins::LastMix::Services::Base);
+
+my $use3rdPartySpotify;
+
+sub isEnabled {
+	my ($class, $client) = @_;
+
+	return unless $client;
+	
+	if (!defined $use3rdPartySpotify) {
+		$use3rdPartySpotify = (Slim::Utils::PluginManager->isEnabled('Plugins::Spotify::Plugin') || Slim::Utils::PluginManager->isEnabled('Plugins::SpotifyProtocolHandler::Plugin')) ? 1 : 0;
+	}
+	
+	return if $Plugins::LastMix::Plugin::NOMYSB && !$use3rdPartySpotify; 
+
+	return unless $use3rdPartySpotify || Slim::Utils::PluginManager->isEnabled('Slim::Plugin::SpotifyLogi::Plugin');
+	
+	return unless $use3rdPartySpotify || $client->isAppEnabled('Spotify');
+	
+	# spotify on ip3k only with Triode's plugin
+	return unless $use3rdPartySpotify || ($client->isa('Slim::Player::SqueezePlay') && $client->model ne 'squeezeplay');
+
+	return 'spotify';
+} 
+
+sub protocol { 'spotify' }
+
+sub searchUrl {
+	my ($class) = @_;
+	sprintf('/api/spotify/v1/opml/search?type=track&q=track:%s%%20artist:%s', URI::Escape::uri_escape_utf8($class->args->{title}), URI::Escape::uri_escape_utf8($class->args->{artist}));
+}
+
+
+package Plugins::LastMix::Services::Napster;
+
+use base qw(Plugins::LastMix::Services::Base);
+
+sub isEnabled {
+	my ($class, $client) = @_;
+	
+	return if $Plugins::LastMix::Plugin::NOMYSB;
+	
+	return if !$client;
+	
+	return if !$client->isa('Slim::Player::Squeezebox2') || $client->model eq 'squeezeplay';
+
+	return unless Slim::Utils::PluginManager->isEnabled('Slim::Plugin::RhapsodyDirect::Plugin');
+	
+	return if !($client->isAppEnabled('RhapsodyDirect') || $client->isAppEnabled('RhapsodyEU')); 
+	
+	return 'napster';
+} 
+
+sub protocol { 'rhapd' }
+
+sub searchUrl {
+	my ($class) = @_;
+	sprintf('/api/rhapsody/v1/opml/search/fastFindTracks?q=%s', URI::Escape::uri_escape_utf8($class->args->{title}));
+}
+
+1;
 
 1;
