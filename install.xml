@@ -1,0 +1,20 @@
+<?xml version='1.0' standalone='yes'?>
+<extension>
+	<name>PLUGIN_LASTMIX_NAME</name>
+	<creator>Michael Herger</creator>
+	<defaultState>enabled</defaultState>
+	<description>PLUGIN_LASTMIX_DESC</description>
+	<email>slim@herger.net</email>
+<!-- 	<homepageURL>http://www.herger.net/LastMix</homepageURL> -->
+	<optionsURL>plugins/MusicArtistInfo/settings.html</optionsURL>
+	<id>9a8b1cdd-e3fc-45eb-9c15-6c867079fa72</id>
+	<id2>c6abc51e-847b-91ab-a0de-2ede33875e24</id2>
+	<module>Plugins::LastMix::Plugin</module>
+	<targetApplication>
+		<id>SqueezeCenter</id>
+		<maxVersion>*</maxVersion>
+		<minVersion>7.9</minVersion>
+	</targetApplication>
+	<type>2</type>
+	<version>0.1.1</version>
+</extension>
