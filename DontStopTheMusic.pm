@@ -402,9 +402,6 @@ sub _checkTrack {
 					$knownArtists{$artist} = $artistId = $result->[0]->{id};
 				}
 			}
-			else {
-				$unknownArtists{$artist}++;
-			}
 		}
 	
 		if ($artistId) {
@@ -428,8 +425,11 @@ sub _checkTrack {
 				$log->info("No local track found for: " . Data::Dump::dump($candidate));
 			}
 		}
-		elsif ( main::INFOLOG && $log->is_info ) {
-			$log->info("No local track found for artist: " . $candidate->{artist});
+		else {
+			$unknownArtists{$artist}++;
+			if ( main::INFOLOG && $log->is_info ) {
+				$log->info("No local track found for artist: " . $candidate->{artist});
+			}
 		}
 	}
 	
