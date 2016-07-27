@@ -155,7 +155,7 @@ sub tagMix {
 					!$IGNORE_TAGS->{lc($_)}
 				} keys %$tags ]);
 			}
-		}, shift $seedTracks );
+		}, shift @$seedTracks );
 		
 		return;
 	}
@@ -224,7 +224,7 @@ sub artistMix {
 	
 	# get a list of (related) artists
 	if ($seedTracks && ref $seedTracks && scalar @$seedTracks) {
-		my $seedTrack = shift $seedTracks;
+		my $seedTrack = shift @$seedTracks;
 		
 		_addArtist($client, $seedTrack->{artist});
 		
