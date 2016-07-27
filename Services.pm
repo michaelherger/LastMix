@@ -15,6 +15,11 @@ my @serviceHandlers = qw(
 
 my $serviceHandler;
 
+sub registerHandler {
+	my ($class, $handlerClass) = @_;
+	unshift @serviceHandlers, $handlerClass;
+}
+
 sub getServiceHandler {
 	my ($class, $client) = @_;
 	
