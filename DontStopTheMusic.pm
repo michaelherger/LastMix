@@ -43,6 +43,11 @@ sub please {
 	my ($client, $cb, $seedTracks, $localMusicOnly) = @_;
 	
 	$client->pluginData( localMusicOnly => ($localMusicOnly || 0) );
+	$client->pluginData( tracks => {} );
+	$client->pluginData( artists => {} );
+	$client->pluginData( tags => {} );
+	$client->pluginData( candidates => [] );
+	$client->pluginData( seed => [] );
 	
 	my $choice = int(rand(3));
 
@@ -68,7 +73,6 @@ sub trackMix {
 	if (!$seedTracks) {
 		$seedTracks = Slim::Plugin::DontStopTheMusic::Plugin->getMixableProperties($client, SEED_TRACKS);
 		main::DEBUGLOG && $log->is_debug && $log->debug("Seed Tracks: " . Data::Dump::dump($seedTracks));
-		$client->pluginData( candidates => [] );
 		$client->pluginData( seed => Storable::dclone($seedTracks) );
 	}
 
@@ -122,8 +126,6 @@ sub tagMix {
 	if (!$seedTracks) {
 		$seedTracks = Slim::Plugin::DontStopTheMusic::Plugin->getMixableProperties($client, SEED_TRACKS);
 		main::DEBUGLOG && $log->is_debug && $log->debug("Seed Tracks: " . Data::Dump::dump($seedTracks));
-		$client->pluginData( candidates => [] );
-		$client->pluginData( tags => {} );
 	}
 	
 	# get a list of (related) artists
@@ -217,8 +219,6 @@ sub artistMix {
 	if (!$seedTracks) {
 		$seedTracks = Slim::Plugin::DontStopTheMusic::Plugin->getMixableProperties($client, SEED_TRACKS);
 		main::DEBUGLOG && $log->is_debug && $log->debug("Seed Tracks: " . Data::Dump::dump($seedTracks));
-		$client->pluginData( candidates => [] );
-		$client->pluginData( artists => {} );
 		$client->pluginData( seed => Storable::dclone($seedTracks) );
 	}
 	
