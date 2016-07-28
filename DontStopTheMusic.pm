@@ -25,9 +25,21 @@ my $log = Slim::Utils::Log->addLogCategory({
 	'description'  => 'PLUGIN_LASTMIX_NAME',
 });
 
+# some tags we want to ignore, because they're too generic or cross genres
 my $IGNORE_TAGS => {
 	'seen live' => 1,
-	'seen-live' => 1,
+	'female vocalist' => 1,		# any female vocalist, whether jazz or electro
+	'pop' => 1,
+	rock => 1,
+	dance => 1,					# could be any dance, from waltz to hip hop
+	alternative => 1,
+	indie => 1,
+	experimental => 1,
+	instrumental => 1,
+	soundtrack => 1,
+	british => 1,
+	deutsch => 1,
+	german => 1,
 };
 
 # we're going to cache some information about our artists during the resolving process
