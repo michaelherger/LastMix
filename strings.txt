@@ -12,3 +12,7 @@ PLUGIN_LASTMIX_DSTM_LOCAL_ONLY
 	
 PLUGIN_LASTMIX_DSTM_ITEM
 	EN	LastMix
+	
+PLUGIN_LASTMIX_DSTM_YOUR_FAVORITE_ARTISTS
+	DE	LastMix - Deine Lieblingskünstler
+	EN	LastMix - Your Favorite Artists

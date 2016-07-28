@@ -6,6 +6,7 @@ use URI::Escape qw(uri_escape_utf8);
 
 use Slim::Utils::Cache;
 use Slim::Utils::Log;
+use Slim::Utils::Prefs;
 
 use constant BASE_URL => 'http://ws.audioscrobbler.com/2.0/';
 use constant CACHE_TTL => 60*60*24;
@@ -16,6 +17,25 @@ my $aid;
 
 sub init {
 	shift->aid(shift->_pluginDataFor('id2'));
+}
+
+sub getUsername {
+	my ( $class, $client ) = @_;
+	
+	my $lfmPrefs = preferences('plugin.audioscrobbler');
+	my $username = $lfmPrefs->client($client->master)->get('account') if $client;
+	
+	if (!$username) {
+		my $accounts = $lfmPrefs->get('accounts');
+		if ($accounts && ref $accounts && scalar @$accounts) {
+			my $account = $accounts->[ $lfmPrefs->get('account') || 0 ];
+			if ($account) {
+				$username = $account->{username};
+			}
+		}
+	}
+	
+	return $username;
 }
 
 sub getSimilarTracks {
@@ -54,6 +74,18 @@ sub getSimilarArtists {
 		artist => $args->{artist},
 		autocorrect => 1,
 		limit => 5,
+	}, sub {
+		$cb->(shift);
+	});
+}
+
+sub getFavouriteArtists {
+	my ( $class, $cb, $args ) = @_;
+	
+	_call({
+		method => 'user.getTopArtists',
+		username => $args->{username} || $class->getUsername(),
+		limit => 50,
 	}, sub {
 		$cb->(shift);
 	});
@@ -111,7 +143,7 @@ sub _call {
 	my $url = BASE_URL . '?' . join( '&', sort @query, 'api_key=' . aid(), 'format=json' );
 	$url =~ s/\?$//;
 	
-	if ( my $cached = $cache->get($url) ) {
+	if ( !$params->{_nocache} && (my $cached = $cache->get($url)) ) {
 		$cb->($cached);
 		return;
 	}
@@ -120,7 +152,7 @@ sub _call {
 	
 	$params->{timeout} ||= 15;
 	
-	if ( !delete $params->{_nocache} ) {
+	if ( !$params->{_nocache} ) {
 		$params->{cache} = 1;
 		$params->{expires} = CACHE_TTL;
 	}
@@ -140,7 +172,7 @@ sub _call {
 
 		main::DEBUGLOG && $log->is_debug && warn Data::Dump::dump($result);
 		
-		$cache->set($url, $result, 30);
+		$cache->set($url, $result, CACHE_TTL) if !$params->{_nocache};
 			
 		$cb->($result);
 	};

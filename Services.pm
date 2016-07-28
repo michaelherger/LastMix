@@ -63,7 +63,7 @@ sub extractTrack {
 	
 	if (main::INFOLOG && $log->is_info) {
 		$log->info("Trying to match criteria: " . Data::Dump::dump($args));
-		$log->info( Data::Dump::dump(
+		main::DEBUGLOG && $log->is_debug && $log->debug( Data::Dump::dump(
 			map { "$_->{title} - $_->{artist}" } 
 			grep { $_->{title} =~ /^\Q$title\E/ || $title =~ /^\Q$_->{title}\E/ }
 			@$candidates)

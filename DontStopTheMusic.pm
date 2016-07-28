@@ -54,14 +54,11 @@ sub init {
 sub please {
 	my ($client, $cb, $seedTracks, $localMusicOnly) = @_;
 	
+	$client = $client->master;
 	$client->pluginData( localMusicOnly => ($localMusicOnly || 0) );
-	$client->pluginData( tracks => {} );
-	$client->pluginData( artists => {} );
-	$client->pluginData( tags => {} );
-	$client->pluginData( candidates => [] );
-	$client->pluginData( seed => [] );
+	_initPluginData($client);
 	
-	my $choice = int(rand(3));
+	my $choice = int(rand(2));
 
 	if ($choice == 0) {
 		trackMix(@_);
@@ -70,8 +67,21 @@ sub please {
 		artistMix(@_);
 	}
 	else {
-		tagMix(@_);
+		$log->error("Invalid choice of mixer?!? ", $choice);
+#		tagMix(@_);
 	}
+}
+
+sub _initPluginData {
+	my $client = shift || return;
+	
+	$client = $client->master;
+	
+	$client->pluginData( tracks => {} );
+	$client->pluginData( artists => {} );
+	$client->pluginData( tags => {} );
+	$client->pluginData( candidates => [] );
+	$client->pluginData( seed => [] );
 }
 
 sub myMusicOnlyPlease {
@@ -81,6 +91,8 @@ sub myMusicOnlyPlease {
 
 sub trackMix {
 	my ($client, $cb, $seedTracks) = @_;
+	
+	$client = $client->master;
 
 	if (!$seedTracks) {
 		$seedTracks = Slim::Plugin::DontStopTheMusic::Plugin->getMixableProperties($client, SEED_TRACKS);
@@ -135,6 +147,8 @@ sub trackMix {
 sub tagMix {
 	my ($client, $cb, $seedTracks) = @_;
 
+	$client = $client->master;
+
 	if (!$seedTracks) {
 		$seedTracks = Slim::Plugin::DontStopTheMusic::Plugin->getMixableProperties($client, SEED_TRACKS);
 		main::DEBUGLOG && $log->is_debug && $log->debug("Seed Tracks: " . Data::Dump::dump($seedTracks));
@@ -179,6 +193,8 @@ sub tagMix {
 
 sub getTaggedTracks {
 	my ($client, $cb, $tags) = @_;
+
+	$client = $client->master;
 
 	# get the tag's top tracks
 	if ($tags && ref $tags && scalar @$tags) {
@@ -228,6 +244,8 @@ sub getTaggedTracks {
 sub artistMix {
 	my ($client, $cb, $seedTracks) = @_;
 
+	$client = $client->master;
+
 	if (!$seedTracks) {
 		$seedTracks = Slim::Plugin::DontStopTheMusic::Plugin->getMixableProperties($client, SEED_TRACKS);
 		main::DEBUGLOG && $log->is_debug && $log->debug("Seed Tracks: " . Data::Dump::dump($seedTracks));
@@ -265,6 +283,44 @@ sub artistMix {
 	}
 	
 	$cb->($client);
+}
+
+sub favouriteArtistMix {
+	my ($client, $cb) = @_;
+
+	$client = $client->master;
+	
+	_initPluginData($client);
+	
+	my $username = Plugins::LastMix::LFM->getUsername($client);
+	
+	# get the list of this user's favourite artists
+	if ($username) {
+		Plugins::LastMix::LFM->getFavouriteArtists(sub {
+			my $results = shift;
+			
+			if ( $results && ref $results && $results->{topartists} && ref $results->{topartists} && (my $candidates = $results->{topartists}->{artist}) ) {
+				Slim::Player::Playlist::fischer_yates_shuffle($candidates);
+
+				# store the artist if we got some
+				foreach (splice @$candidates, 0, 10) {
+					_addArtist($client, $_->{name});
+				}
+			}
+			else {
+				warn Data::Dump::dump($results);
+			}
+
+			getArtistTracks($client, $cb, [ keys %{ $client->pluginData('artists') } ]);
+		}, {
+			username => $username
+		} );
+		
+		return;
+	}
+	
+	# fall back to artist mix
+	artistMix($client, $cb);
 }
 
 sub _addArtist {
