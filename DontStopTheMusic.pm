@@ -77,7 +77,7 @@ sub _initPluginData {
 	
 	$client = $client->master;
 	
-	$client->pluginData( tracks => {} );
+	$client->pluginData( tracks => [] );
 	$client->pluginData( artists => {} );
 	$client->pluginData( tags => {} );
 	$client->pluginData( candidates => [] );
@@ -381,10 +381,6 @@ sub getArtistTracks {
 
 sub checkTracks {
 	my ($client, $cb) = @_;
-	
-	$client->pluginData( seed => [] );
-	$client->pluginData( artists => {} );
-	$client->pluginData( tags => {} );
 
 	my $candidates = $client->pluginData('candidates');
 	
@@ -392,20 +388,17 @@ sub checkTracks {
 	if ( $tracks && ref $tracks ) {
 
 		# stop after some matches
-		if ( scalar keys %$tracks >= MAX_TRACKS ) {
+		if ( scalar @$tracks >= MAX_TRACKS ) {
 			# we don't want duplicates in the playlist
-			foreach ( @{Slim::Player::Playlist::playList($client)} ) {
-				my $url = blessed($_) ? $_->url : $_;
-				
-				if ( $url && $tracks->{$url} ) {
-					main::INFOLOG && $log->is_info && $log->info("Track is already in our play queue: " . $url);
-					delete $tracks->{$url};
-				}
-			}
+			$tracks = Slim::Plugin::DontStopTheMusic::Plugin->deDupe($tracks);
+
+			if ( scalar @$tracks >= MAX_TRACKS ) {
+				$tracks = Slim::Plugin::DontStopTheMusic::Plugin->deDupePlaylist($client, $tracks);
 			
-			# if we're done, delete the remaining list of candidates
-			if ( scalar keys %$tracks >= MAX_TRACKS ) {
-				$candidates = undef;
+				# if we're done, delete the remaining list of candidates
+				if ( scalar @$tracks >= MAX_TRACKS ) {
+					$candidates = undef;
+				}
 			}
 		}
 	}
@@ -418,16 +411,15 @@ sub checkTracks {
 		_checkTrack($client, $cb, shift @$candidates);
 		return;
 	}
+
+	# we're done mixing - clean up our data
+	_initPluginData($client);
 	
-	if ( $tracks && ref $tracks ) {
-		$tracks = [ keys %$tracks ];
-			
-		if ( scalar @$tracks ) {
-			Slim::Player::Playlist::fischer_yates_shuffle($tracks);
+	if ( $tracks && ref $tracks && scalar @$tracks ) {
+		Slim::Player::Playlist::fischer_yates_shuffle($tracks);
 		
-			$cb->($client, $tracks);
-			return;
-		}
+		$cb->($client, $tracks);
+		return;
 	}
 
 	$cb->($client);
@@ -455,7 +447,7 @@ sub _checkTrack {
 		LIMIT 1
 	} );
 	
-	my $tracks = $client->pluginData('tracks') || {};
+	my $tracks = $client->pluginData('tracks') || [];
 	my $artist = Slim::Utils::Text::ignoreCaseArticles( $candidate->{artist}, 1 );
 	
 	if ( !$unknownArtists{$artist} ) {
@@ -481,8 +473,8 @@ sub _checkTrack {
 			if ( my $result = $sth_get_track_by_name_and_artist->fetchall_arrayref({}) ) {
 				my $url = $result->[0]->{url} if ref $result && scalar @$result;
 					
-				if ( $url && !scalar grep(/\Q$url\E/, keys %$tracks) ) {
-					$tracks->{$url}++;
+				if ( $url ) {
+					push @$tracks, $url;
 					$client->pluginData( tracks => $tracks );
 					
 					checkTracks($client, $cb);
@@ -505,8 +497,8 @@ sub _checkTrack {
 		$serviceHandler->lookup($client, sub {
 			my ($url) = @_;
 
-			if ( $url && !scalar grep(/\Q$url\E/, keys %$tracks) ) {
-				$tracks->{$url}++;
+			if ( $url ) {
+				push @$tracks, $url;
 				$client->pluginData( tracks => $tracks );
 			}
 			
