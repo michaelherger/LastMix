@@ -73,7 +73,7 @@ sub getSimilarArtists {
 		method => 'artist.getSimilar',
 		artist => $args->{artist},
 		autocorrect => 1,
-		limit => 5,
+		limit => 25,
 	}, sub {
 		$cb->(shift);
 	});

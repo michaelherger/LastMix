@@ -21,7 +21,7 @@ use constant MAX_TRACKS => 5;
 
 my $log = Slim::Utils::Log->addLogCategory({
 	'category'     => 'plugin.lastmix',
-	'defaultLevel' => 'ERROR',
+	'defaultLevel' => main::INFOLOG ? 'INFO' : 'ERROR',
 	'description'  => 'PLUGIN_LASTMIX_NAME',
 });
 
@@ -51,27 +51,6 @@ sub init {
 	Plugins::LastMix::LFM->init($_[1]);
 }
 
-sub please {
-	my ($client, $cb, $seedTracks, $localMusicOnly) = @_;
-	
-	$client = $client->master;
-	$client->pluginData( localMusicOnly => ($localMusicOnly || 0) );
-	_initPluginData($client);
-	
-	my $choice = int(rand(2));
-
-	if ($choice == 0) {
-		trackMix(@_);
-	}
-	elsif ($choice == 1) {
-		artistMix(@_);
-	}
-	else {
-		$log->error("Invalid choice of mixer?!? ", $choice);
-#		tagMix(@_);
-	}
-}
-
 sub _initPluginData {
 	my $client = shift || return;
 	
@@ -82,6 +61,16 @@ sub _initPluginData {
 	$client->pluginData( tags => {} );
 	$client->pluginData( candidates => [] );
 	$client->pluginData( seed => [] );
+}
+
+sub please {
+	my ($client, $cb, $seedTracks, $localMusicOnly) = @_;
+	
+	$client = $client->master;
+	$client->pluginData( localMusicOnly => ($localMusicOnly || 0) );
+	_initPluginData($client);
+	
+	trackMix(@_);
 }
 
 sub myMusicOnlyPlease {
@@ -96,7 +85,7 @@ sub trackMix {
 
 	if (!$seedTracks) {
 		$seedTracks = Slim::Plugin::DontStopTheMusic::Plugin->getMixableProperties($client, SEED_TRACKS);
-		main::DEBUGLOG && $log->is_debug && $log->debug("Seed Tracks: " . Data::Dump::dump($seedTracks));
+		main::INFOLOG && $log->is_info && $log->info("Seed Tracks: " . Data::Dump::dump($seedTracks));
 		$client->pluginData( seed => Storable::dclone($seedTracks) );
 	}
 
@@ -128,12 +117,22 @@ sub trackMix {
 				trackMix($client, $cb, $seedTracks);
 			}
 			# in case we didn't find any tracks, try an artist mix instead
-			elsif ( ! scalar @{ $client->pluginData('candidates') } ) {
-				$client->pluginData( tags => {} );
-				tagMix($client, $cb, $client->pluginData('seed'));
+			elsif ( !scalar @{ $client->pluginData('candidates') } ) {
+				main::INFOLOG && $log->is_info && $log->info("Didn't find any similar tracks - trying artist mix instead.");
+				artistMix($client, $cb, Storable::dclone($client->pluginData('seed')));
 			}
 			else {
-				checkTracks($client, $cb);
+				checkTracks($client, sub {
+					my ($client, $tracks) = @_;
+
+					if ($tracks) {
+						$cb->(@_);
+					}
+					else {
+						main::INFOLOG && $log->is_info && $log->info("Didn't find any similar tracks - trying artist mix instead.");
+						artistMix($client, $cb, Storable::dclone($client->pluginData('seed')));
+					}
+				});
 			}
 			
 		}, shift @$seedTracks );
@@ -176,12 +175,15 @@ sub tagMix {
 			}
 			else {
 				my $tags = $client->pluginData('tags');
-				
-				getTaggedTracks($client, $cb, [ sort {
+				$tags = [ sort {
 					$tags->{$b} <=> $tags->{$a}
 				} grep {
 					!$IGNORE_TAGS->{lc($_)}
-				} keys %$tags ]);
+				} keys %$tags ];
+				
+				main::INFOLOG && $log->is_info && $log->info(Data::Dump::dump('Getting tags:', $tags));
+				
+				getTaggedTracks($client, $cb, $tags);
 			}
 		}, shift @$seedTracks );
 		
@@ -335,6 +337,11 @@ sub getArtistTracks {
 	
 	# get the artist's top tracks
 	if ($artists && ref $artists && scalar @$artists) {
+		if (scalar @$artists > 5) {
+			Slim::Player::Playlist::fischer_yates_shuffle($artists);
+			$artists = [ splice @$artists, 0, 5 ];
+		}
+		
 		Plugins::LastMix::LFM->getArtistTopTracks(sub {
 			my $results = shift;
 			
@@ -362,12 +369,22 @@ sub getArtistTracks {
 				getArtistTracks($client, $cb, $artists);
 			}
 			# in case we didn't find any tracks, try an artist mix instead
-			elsif ( ! scalar @{ $client->pluginData('candidates') } ) {
-				$client->pluginData( tags => {} );
-				tagMix($client, $cb, $client->pluginData('seed'));
+			elsif ( !scalar @{ $client->pluginData('candidates') } ) {
+				main::INFOLOG && $log->is_info && $log->info("Didn't find any similar artist tracks - trying tag mix instead. Surprises ahead!");
+				tagMix($client, $cb, Storable::dclone($client->pluginData('seed')));
 			}
 			else {
-				checkTracks($client, $cb);
+				checkTracks($client, sub {
+					my ($client, $tracks) = @_;
+					
+					if ($tracks) {
+						$cb->(@_);
+					}
+					else {
+						main::INFOLOG && $log->is_info && $log->info("Didn't find any similar artist tracks - trying tag mix instead. Surprises ahead!");
+						tagMix($client, $cb, Storable::dclone($client->pluginData('seed')));
+					}
+				});
 			}
 		}, {
 			artist => shift @$artists
@@ -412,10 +429,12 @@ sub checkTracks {
 		return;
 	}
 
-	# we're done mixing - clean up our data
-	_initPluginData($client);
+	$tracks = Slim::Plugin::DontStopTheMusic::Plugin->deDupePlaylist($client, $tracks);
 	
 	if ( $tracks && ref $tracks && scalar @$tracks ) {
+		# we're done mixing - clean up our data
+		_initPluginData($client);
+
 		Slim::Player::Playlist::fischer_yates_shuffle($tracks);
 		
 		$cb->($client, $tracks);
@@ -487,8 +506,8 @@ sub _checkTrack {
 		}
 		else {
 			$unknownArtists{$artist}++;
-			if ( main::INFOLOG && $log->is_info ) {
-				$log->info("No local track found for artist: " . $candidate->{artist});
+			if ( main::DEBUGLOG && $log->is_debug ) {
+				$log->debug("No local track found for artist: " . $candidate->{artist});
 			}
 		}
 	}
