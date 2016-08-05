@@ -462,7 +462,7 @@ sub _checkTrack {
 	my $sth_get_track_by_name_and_artist = $dbh->prepare_cached( qq{
 		SELECT tracks.url
 		FROM tracks, contributor_track
-		WHERE titlesearch = ?
+		WHERE titlesearch LIKE ?
 		AND contributor_track.track = tracks.id AND contributor_track.contributor = ?
 		LIMIT 1
 	} );
@@ -475,14 +475,14 @@ sub _checkTrack {
 	} );
 	
 	my $tracks = $client->pluginData('tracks') || [];
-	my $artist = Slim::Utils::Text::ignoreCaseArticles( $candidate->{artist}, 1 );
+	my $artist = Slim::Utils::Text::ignoreCase( $candidate->{artist}, 1 );
 	
 	if ( !$unknownArtists{$artist} ) {
 		# look up artist first, blacklisting if not available to prevent further lookups of tracks of that artist
 		my $artistId = $knownArtists{$artist};
 		
 		if ( !$artistId ) {
-			$sth_get_artist_by_name->execute($artist);
+			$sth_get_artist_by_name->execute("\%$artist\%");
 		
 			if ( my $result = $sth_get_artist_by_name->fetchall_arrayref({}) ) {
 				if ( ref $result && scalar @$result ) {
@@ -493,7 +493,7 @@ sub _checkTrack {
 	
 		if ($artistId) {
 			$sth_get_track_by_name_and_artist->execute(
-				Slim::Utils::Text::ignoreCaseArticles( $candidate->{title}, 1 ),
+				Slim::Utils::Text::ignoreCase( $candidate->{title}, 1 ) . '%',
 				$artistId
 			);
 				
@@ -514,8 +514,8 @@ sub _checkTrack {
 		}
 		else {
 			$unknownArtists{$artist}++;
-			if ( main::DEBUGLOG && $log->is_debug ) {
-				$log->debug("No local track found for artist: " . $candidate->{artist});
+			if ( main::INFOLOG && $log->is_info ) {
+				$log->info(sprintf("No local track found for artist: %s (%s)", $candidate->{artist}, $artist));
 			}
 		}
 	}
