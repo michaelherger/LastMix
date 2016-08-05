@@ -47,7 +47,15 @@ tie my %unknownArtists, 'Tie::Cache::LRU', 128;
 tie my %knownArtists, 'Tie::Cache::LRU', 128;
 my $aid;
 
+my $deDupeClass = 'Slim::Plugin::DontStopTheMusic::Plugin';
+
 sub init {
+	if ( !$deDupeClass->can('deDupe') ) {
+		$log->error('Your Logitech Media Server is OUTDATED. Please update!');
+		require Plugins::LastMix::DeDupe;
+		$deDupeClass = 'Plugins::LastMix::DeDupe';
+	}
+	
 	Plugins::LastMix::LFM->init($_[1]);
 }
 
@@ -407,10 +415,10 @@ sub checkTracks {
 		# stop after some matches
 		if ( scalar @$tracks >= MAX_TRACKS ) {
 			# we don't want duplicates in the playlist
-			$tracks = Slim::Plugin::DontStopTheMusic::Plugin->deDupe($tracks);
+			$tracks = $deDupeClass->deDupe($tracks);
 
 			if ( scalar @$tracks >= MAX_TRACKS ) {
-				$tracks = Slim::Plugin::DontStopTheMusic::Plugin->deDupePlaylist($client, $tracks);
+				$tracks = $deDupeClass->deDupePlaylist($client, $tracks);
 			
 				# if we're done, delete the remaining list of candidates
 				if ( scalar @$tracks >= MAX_TRACKS ) {
@@ -429,7 +437,7 @@ sub checkTracks {
 		return;
 	}
 
-	$tracks = Slim::Plugin::DontStopTheMusic::Plugin->deDupePlaylist($client, $tracks);
+	$tracks = $deDupeClass->deDupePlaylist($client, $tracks);
 	
 	if ( $tracks && ref $tracks && scalar @$tracks ) {
 		# we're done mixing - clean up our data
