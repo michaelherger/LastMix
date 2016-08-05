@@ -101,21 +101,8 @@ sub trackMix {
 		Plugins::LastMix::LFM->getSimilarTracks(sub {
 			my $results = shift;
 			
-			if ( $results && ref $results && $results->{similartracks} && ref $results->{similartracks} && (my $candidates = $results->{similartracks}->{track}) ) {
-				# store the tracks if we got some
-				if ( scalar @$candidates ) {
-					$candidates = [ map {
-						{
-							title  => $_->{name},
-							artist => $_->{artist}->{name}
-						}
-					} grep {
-						$_->{artist} && $_->{artist}->{name}
-					} @$candidates ];
-					
-					push @$candidates, @{ $client->pluginData('candidates') };
-					$client->pluginData( candidates => $candidates );
-				}
+			if ( $results && ref $results ) {
+				_parseTracks($client, $results, 'similartracks');
 			}
 			else {
 				warn Data::Dump::dump($results);
@@ -215,21 +202,8 @@ sub getTaggedTracks {
 		Plugins::LastMix::LFM->getTagTopTracks(sub {
 			my $results = shift;
 			
-			if ( $results && ref $results && $results->{tracks} && ref $results->{tracks} && (my $candidates = $results->{tracks}->{track}) ) {
-				# store the tracks if we got some
-				if ( scalar @$candidates ) {
-					$candidates = [ map {
-						{
-							title  => $_->{name},
-							artist => $_->{artist}->{name}
-						}
-					} grep {
-						$_->{artist} && $_->{artist}->{name}
-					} @$candidates ];
-					
-					push @$candidates, @{ $client->pluginData('candidates') };
-					$client->pluginData( candidates => $candidates );
-				}
+			if ( $results && ref $results ) {
+				_parseTracks($client, $results, 'tracks');
 			}
 			else {
 				warn Data::Dump::dump($results);
@@ -265,6 +239,8 @@ sub artistMix {
 	# get a list of (related) artists
 	if ($seedTracks && ref $seedTracks && scalar @$seedTracks) {
 		my $seedTrack = shift @$seedTracks;
+		
+		$seedTrack->{mbid} = delete $seedTrack->{artist_mbid};
 		
 		_addArtist($client, $seedTrack->{artist});
 		
@@ -353,21 +329,8 @@ sub getArtistTracks {
 		Plugins::LastMix::LFM->getArtistTopTracks(sub {
 			my $results = shift;
 			
-			if ( $results && ref $results && $results->{toptracks} && ref $results->{toptracks} && (my $candidates = $results->{toptracks}->{track}) ) {
-				# store the tracks if we got some
-				if ( scalar @$candidates ) {
-					$candidates = [ map {
-						{
-							title  => $_->{name},
-							artist => $_->{artist}->{name}
-						}
-					} grep {
-						$_->{artist} && $_->{artist}->{name}
-					} @$candidates ];
-					
-					push @$candidates, @{ $client->pluginData('candidates') };
-					$client->pluginData( candidates => $candidates );
-				}
+			if ( $results && ref $results ) {
+				_parseTracks($client, $results, 'toptracks', 'track');
 			}
 			else {
 				warn Data::Dump::dump($results);
@@ -459,29 +422,64 @@ sub _checkTrack {
 	my $dbh = Slim::Schema->dbh;
 
 	# XXX - add library support
-	my $sth_get_track_by_name_and_artist = $dbh->prepare_cached( qq{
-		SELECT tracks.url
-		FROM tracks, contributor_track
-		WHERE titlesearch LIKE ?
-		AND contributor_track.track = tracks.id AND contributor_track.contributor = ?
-		LIMIT 1
-	} );
-
-	my $sth_get_artist_by_name = $dbh->prepare_cached( qq{
-		SELECT id, name
-		FROM contributors
-		WHERE namesearch LIKE ?
-		LIMIT 1
-	} );
 	
 	my $tracks = $client->pluginData('tracks') || [];
 	my $artist = Slim::Utils::Text::ignoreCase( $candidate->{artist}, 1 );
 	
 	if ( !$unknownArtists{$artist} ) {
+		if ( $candidate->{mbid} ) {
+			# try track search by musicbrainz ID first
+			my $sth_get_track_by_mbid = $dbh->prepare_cached( qq{
+				SELECT tracks.url
+				FROM tracks
+				WHERE musicbrainz_id = ?
+				LIMIT 1
+			} );
+
+			$sth_get_track_by_mbid->execute($candidate->{mbid});
+
+			if ( my $result = $sth_get_track_by_mbid->fetchall_arrayref({}) ) {
+				my $url = $result->[0]->{url} if ref $result && scalar @$result;
+					
+				if ( $url ) {
+					push @$tracks, $url;
+					$client->pluginData( tracks => $tracks );
+					
+					checkTracks($client, $cb);
+					return;
+				}
+			}
+		}
+
 		# look up artist first, blacklisting if not available to prevent further lookups of tracks of that artist
 		my $artistId = $knownArtists{$artist};
 		
+		# try the musicbrainz ID first - if available
+		if ( !$artistId && $candidate->{artist_mbid} ) {
+			my $sth_get_artist_by_mbid = $dbh->prepare_cached( qq{
+				SELECT id, name
+				FROM contributors
+				WHERE musicbrainz_id = ?
+				LIMIT 1
+			} );
+
+			$sth_get_artist_by_mbid->execute($candidate->{artist_mbid});
+		
+			if ( my $result = $sth_get_artist_by_mbid->fetchall_arrayref({}) ) {
+				if ( ref $result && scalar @$result ) {
+					$knownArtists{$artist} = $artistId = $result->[0]->{id};
+				}
+			}
+		}
+		
 		if ( !$artistId ) {
+			my $sth_get_artist_by_name = $dbh->prepare_cached( qq{
+				SELECT id, name
+				FROM contributors
+				WHERE namesearch LIKE ?
+				LIMIT 1
+			} );
+
 			$sth_get_artist_by_name->execute("\%$artist\%");
 		
 			if ( my $result = $sth_get_artist_by_name->fetchall_arrayref({}) ) {
@@ -492,6 +490,14 @@ sub _checkTrack {
 		}
 	
 		if ($artistId) {
+			my $sth_get_track_by_name_and_artist = $dbh->prepare_cached( qq{
+				SELECT tracks.url
+				FROM tracks, contributor_track
+				WHERE titlesearch LIKE ?
+				AND contributor_track.track = tracks.id AND contributor_track.contributor = ?
+				LIMIT 1
+			} );
+
 			$sth_get_track_by_name_and_artist->execute(
 				Slim::Utils::Text::ignoreCase( $candidate->{title}, 1 ) . '%',
 				$artistId
@@ -534,6 +540,29 @@ sub _checkTrack {
 	}
 	else {
 		checkTracks($client, $cb);
+	}
+}
+
+sub _parseTracks {
+	my ($client, $results, $tag) = @_;
+	
+	if ( $results && ref $results && $results->{$tag} && ref $results->{$tag} && (my $candidates = $results->{$tag}->{track}) ) {
+		# store the tracks if we got some
+		if ( $candidates && ref $candidates && scalar @$candidates ) {
+			$candidates = [ map {
+				{
+					title  => $_->{name},
+					mbid   => $_->{mbid},
+					artist => $_->{artist}->{name},
+					artist_mbid => $_->{artist}->{mbid},
+				}
+			} grep {
+				$_->{artist} && $_->{artist}->{name}
+			} @$candidates ];
+			
+			push @$candidates, @{ $client->pluginData('candidates') };
+			$client->pluginData( candidates => $candidates );
+		}
 	}
 }
 

@@ -41,6 +41,29 @@ sub getUsername {
 sub getSimilarTracks {
 	my ( $class, $cb, $args ) = @_;
 	
+	if ($args->{mbid}) {
+		_call({
+			method => 'track.getSimilar',
+			mbid => $args->{mbid},
+		}, sub {
+			my $results = shift;
+			
+			if ( $results && ref $results && $results->{similartracks} && ref $results->{similartracks} ) {
+				$cb->($results);
+			}
+			else {
+				$class->getSimilarTracksByName($cb, $args);
+			}
+		});
+	}
+	else {
+		$class->getSimilarTracksByName($cb, $args);
+	}
+}
+
+sub getSimilarTracksByName {
+	my ( $class, $cb, $args ) = @_;
+	
 	_call({
 		method => 'track.getSimilar',
 		artist => $args->{artist},
@@ -69,6 +92,30 @@ sub getTrackTags {
 sub getSimilarArtists {
 	my ( $class, $cb, $args ) = @_;
 	
+	if ($args->{mbid}) {
+		_call({
+			method => 'artist.getSimilar',
+			mbid => $args->{mbid},
+			limit => 25,
+		}, sub {
+			my $results = shift;
+			
+			if ( $results && ref $results && $results->{similarartists} && ref $results->{similarartists} ) {
+				$cb->($results);
+			}
+			else {
+				$class->getSimilarArtistsByName($cb, $args);
+			}
+		});
+	}
+	else {
+		$class->getSimilarArtistsByName($cb, $args);
+	}
+}
+
+sub getSimilarArtistsByName {
+	my ( $class, $cb, $args ) = @_;
+	
 	_call({
 		method => 'artist.getSimilar',
 		artist => $args->{artist},
@@ -94,6 +141,29 @@ sub getFavouriteArtists {
 sub getArtistTags {
 	my ( $class, $cb, $args ) = @_;
 	
+	if ($args->{mbid}) {
+		_call({
+			method => 'artist.getTopTags',
+			mbid => $args->{mbid},
+		}, sub {
+			my $results = shift;
+			
+			if ( $results && ref $results && $results->{toptags} && ref $results->{toptags} ) {
+				$cb->($results);
+			}
+			else {
+				$class->getArtistTagsByArtistName($cb, $args);
+			}
+		});
+	}
+	else {
+		$class->getArtistTagsByArtistName($cb, $args);
+	}
+}
+
+sub getArtistTagsByArtistName {
+	my ( $class, $cb, $args ) = @_;
+	
 	_call({
 		method => 'artist.getTopTags',
 		artist => $args->{artist},
@@ -104,6 +174,29 @@ sub getArtistTags {
 }
 
 sub getArtistTopTracks {
+	my ( $class, $cb, $args ) = @_;
+	
+	if ($args->{mbid}) {
+		_call({
+			method => 'artist.getTopTracks',
+			mbid => $args->{mbid},
+		}, sub {
+			my $results = shift;
+			
+			if ( $results && ref $results && $results->{toptracks} && ref $results->{toptracks} ) {
+				$cb->($results);
+			}
+			else {
+				$class->getArtistTopTracksByArtistName($cb, $args);
+			}
+		});
+	}
+	else {
+		$class->getArtistTopTracksByArtistName($cb, $args);
+	}
+}
+
+sub getArtistTopTracksByArtistName {
 	my ( $class, $cb, $args ) = @_;
 	
 	_call({
