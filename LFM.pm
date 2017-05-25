@@ -61,6 +61,30 @@ sub getSimilarTracks {
 	}
 }
 
+sub getLovedTracks {
+	my ( $class, $cb, $args ) = @_;
+	
+	if ( my $username = $class->getUsername ) {
+		_call({
+			method => 'user.getLovedTracks',
+			user => $username,
+		}, sub {
+			my $results = shift;
+
+warn Data::Dump::dump($results);			
+			if ( $results && ref $results && $results->{similartracks} && ref $results->{similartracks} ) {
+#				$cb->($results);
+			}
+			else {
+#				$class->getSimilarTracksByName($cb, $args);
+			}
+		});
+	}
+	else {
+		$class->getSimilarTracksByName($cb, $args);
+	}
+}
+
 sub getSimilarTracksByName {
 	my ( $class, $cb, $args ) = @_;
 	
