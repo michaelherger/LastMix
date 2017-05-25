@@ -20,7 +20,6 @@ sub postinitPlugin {
 		Slim::Plugin::DontStopTheMusic::Plugin->registerHandler('PLUGIN_LASTMIX_DSTM_LOCAL_ONLY', \&Plugins::LastMix::DontStopTheMusic::myMusicOnlyPlease);
 		
 		if ( Plugins::LastMix::LFM->getUsername() ) {
-			Plugins::LastMix::LFM->getLovedTracks();
 			Slim::Plugin::DontStopTheMusic::Plugin->registerHandler('PLUGIN_LASTMIX_DSTM_YOUR_FAVORITE_ARTISTS', \&Plugins::LastMix::DontStopTheMusic::favouriteArtistMix);
 		}
 	}
