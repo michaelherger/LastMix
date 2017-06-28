@@ -21,7 +21,7 @@ use constant MAX_TRACKS => 5;
 
 my $log = Slim::Utils::Log->addLogCategory({
 	'category'     => 'plugin.lastmix',
-	'defaultLevel' => main::INFOLOG ? 'INFO' : 'ERROR',
+	'defaultLevel' => 'WARN',
 	'description'  => 'PLUGIN_LASTMIX_NAME',
 });
 
