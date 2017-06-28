@@ -262,11 +262,17 @@ sub isEnabled {
 
 	return unless $client;
 	
+	# if Spotty is installed and comes with LastMix support, use it
 	if (!defined $hasSpotty) {
-		$hasSpotty = Slim::Utils::PluginManager->isEnabled('Plugins::Spotty::Plugin') ? 1 : 0;
+		if ( Slim::Utils::PluginManager->isEnabled('Plugins::Spotty::Plugin')
+			&& Slim::Utils::Versions->compareVersions($Plugins::Spotty::Plugin::VERSION, '0.8.0') >= 0
+		) {
+			$hasSpotty = 1;	
+		}
+		
+		$hasSpotty ||= 0;
 	}
-	
-	# if Spotty is installed, use it
+
 	return if $hasSpotty;
 	
 	if (!defined $use3rdPartySpotify) {
