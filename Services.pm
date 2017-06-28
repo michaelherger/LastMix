@@ -255,11 +255,19 @@ package Plugins::LastMix::Services::Spotify;
 use base qw(Plugins::LastMix::Services::Base);
 
 my $use3rdPartySpotify;
+my $hasSpotty;
 
 sub isEnabled {
 	my ($class, $client) = @_;
 
 	return unless $client;
+	
+	if (!defined $hasSpotty) {
+		$hasSpotty = Slim::Utils::PluginManager->isEnabled('Plugins::Spotty::Plugin') ? 1 : 0;
+	}
+	
+	# if Spotty is installed, use it
+	return if $hasSpotty;
 	
 	if (!defined $use3rdPartySpotify) {
 		$use3rdPartySpotify = (Slim::Utils::PluginManager->isEnabled('Plugins::Spotify::Plugin') || Slim::Utils::PluginManager->isEnabled('Plugins::SpotifyProtocolHandler::Plugin')) ? 1 : 0;
