@@ -284,6 +284,8 @@ sub searchUrl {
 	sprintf('/api/spotify/v1/opml/search?type=track&q=track:%s%%20artist:%s', URI::Escape::uri_escape_utf8($class->args->{title}), URI::Escape::uri_escape_utf8($class->args->{artist}));
 }
 
+1;
+
 
 package Plugins::LastMix::Services::Napster;
 
@@ -311,7 +313,5 @@ sub searchUrl {
 	my ($class) = @_;
 	sprintf('/api/rhapsody/v1/opml/search/fastFindTracks?q=%s', URI::Escape::uri_escape_utf8($class->args->{title}));
 }
-
-1;
 
 1;
