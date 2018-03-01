@@ -1,6 +1,6 @@
 PLUGIN_LASTMIX_NAME
 	DE	LastMix - Musikwiedergabe mit Hilfe von Last.fm nie anhalten.
-	EN	LastMix - Don't Top The Music support using Last.fm.
+	EN	LastMix - Don't Stop The Music support using Last.fm.
 	
 PLUGIN_LASTMIX_DESC
 	DE	LastMix bietet die Möglichkeit, mit Hilfe von Last.fm automatische Mixes für das "Don't Stop The Music" Plugin zu erstellen.
