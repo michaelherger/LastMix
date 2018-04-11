@@ -8,7 +8,6 @@ my $log = logger('plugin.lastmix');
 
 my @serviceHandlers = qw(
 	Plugins::LastMix::Services::Tidal
-	Plugins::LastMix::Services::Spotify
 	Plugins::LastMix::Services::Deezer
 	Plugins::LastMix::Services::Napster
 );
@@ -16,13 +15,15 @@ my @serviceHandlers = qw(
 my $serviceHandler;
 
 sub registerHandler {
-	my ($class, $handlerClass) = @_;
-	unshift @serviceHandlers, $handlerClass;
+	my ($class, $handlerClass, $lossless) = @_;
+
+	# if a plugin claims to be lossless streaming, put it at the top, otherwise below the top
+	splice @serviceHandlers, ($lossless ? 0 : 1), 0, $handlerClass;
 }
 
 sub getServiceHandler {
 	my ($class, $client) = @_;
-	
+
 	if ( ! defined $serviceHandler ) {
 		foreach my $service ( @serviceHandlers ) {
 			if ( $service->isEnabled($client) ) {
@@ -30,7 +31,7 @@ sub getServiceHandler {
 				last;
 			}
 		}
-		
+
 		$serviceHandler ||= 0;
 	}
 
@@ -50,7 +51,7 @@ sub extractTrack {
 	} map {
 		my $title = $class->cleanupTitle( lc($_->{title}) );
 		my $artist = lc($_->{artist});
-		
+
 		# artist comes from a menu with "artist - album" in it
 		$artist =~ s/ - .*//;
 
@@ -60,7 +61,7 @@ sub extractTrack {
 			url    => $_->{url},
 		}
 	} @$candidates ];
-	
+
 	if (main::INFOLOG && $log->is_info) {
 		$log->info("Trying to match criteria: " . Data::Dump::dump($args));
 		main::DEBUGLOG && $log->is_debug && $log->debug( Data::Dump::dump(
@@ -68,8 +69,8 @@ sub extractTrack {
 			grep { $_->{title} =~ /^\Q$title\E/ || $title =~ /^\Q$_->{title}\E/ }
 			@$candidates)
 		);
-	} 
-	
+	}
+
 	# we don't care about tracks which don't even match the start of the title name
 	my @candidates = grep { 
 		$_->{title} =~ /^\Q$title\E/
@@ -88,7 +89,7 @@ sub extractTrack {
 	@candidates = grep { 
 		$title =~ /^\Q$_->{title}\E/ 
 	} @$candidates unless $url;
-	
+
 	# "title *" - "artist *"
 	($url) = map { $_->{url} } grep { $title =~ /^\Q$_->{title}\E/ && $_->{artist} =~ /^\Q$artist\E/ } @candidates unless $url;
 
@@ -99,8 +100,8 @@ sub extractTrack {
 		else {
 			$log->info("No match!");
 		}
-	} 
-	
+	}
+
 	return $url;
 }
 
@@ -109,7 +110,7 @@ sub cleanupTitle {
 
 	# remove everything between () or []... But don't for PG's eponymous first four albums :-)
 	$title =~ s/[\(\[].*?[\)\]]//g;
-	
+
 	# remove stuff like "2012", "live"
 	$title =~ s/\d+\/\d+//ig;
 	$title =~ s/- live\b//i;
@@ -118,7 +119,7 @@ sub cleanupTitle {
 	# remove trailing non-word characters
 	$title =~ s/[\s\W]{2,}$//;
 	$title =~ s/\s*$//;
-	
+
 	return $title;
 }
 
@@ -136,11 +137,11 @@ sub isEnabled {}
 
 sub lookup {
 	my ($class, $client, $cb, $args) = @_;
-	
+
 	$class->client($client) if $client;
 	$class->cb($cb) if $cb;
 	$class->args($args) if $args;
-	
+
 	Slim::Formats::XML->getFeedAsync(
 		\&gotResults,
 		\&gotError,
@@ -157,11 +158,11 @@ sub gotResults {
 
 	my $class = $params->{class};
 	my $candidates;
-		
+
 	# extract all potential streams
 	if ($feed && $feed->{items}) {
 		my $protocol = $params->{class}->protocol;
-		
+
 		push @$candidates, map {
 			# some service handlers return one single line rather than two with title and artist
 			if ( !($_->{line1} && $_->{line2}) ) {
@@ -169,7 +170,7 @@ sub gotResults {
 				$_->{line1} ||= $title;
 				$_->{line2} ||= $artist;
 			}
-			
+
 			{
 				title  => $_->{line1} || $_->{name},
 				artist => $_->{line2},
@@ -208,12 +209,12 @@ sub isEnabled {
 	my ($class, $client) = @_;
 
 	return if $Plugins::LastMix::Plugin::NOMYSB;
-	
+
 	return unless $client;
 	return unless Slim::Utils::PluginManager->isEnabled('Slim::Plugin::WiMP::Plugin');
 
 	return ( $client->isAppEnabled('WiMP') || $client->isAppEnabled('WiMPDK') ) ? 'wimp' : undef;
-} 
+}
 
 sub protocol { 'wimp' }
 
@@ -233,12 +234,12 @@ sub isEnabled {
 	my ($class, $client) = @_;
 
 	return if $Plugins::LastMix::Plugin::NOMYSB;
-	
+
 	return unless $client;
 	return unless Slim::Utils::PluginManager->isEnabled('Slim::Plugin::Deezer::Plugin');
 
 	return $client->isAppEnabled('Deezer') ? 'deezer' : undef;
-} 
+}
 
 sub protocol { 'deezer' }
 
@@ -249,77 +250,25 @@ sub searchUrl {
 
 1;
 
-
-package Plugins::LastMix::Services::Spotify;
-
-use base qw(Plugins::LastMix::Services::Base);
-
-my $use3rdPartySpotify;
-my $hasSpotty;
-
-sub isEnabled {
-	my ($class, $client) = @_;
-
-	return unless $client;
-	
-	# if Spotty is installed and comes with LastMix support, use it
-	if (!defined $hasSpotty) {
-		if ( Slim::Utils::PluginManager->isEnabled('Plugins::Spotty::Plugin')
-			&& Slim::Utils::Versions->compareVersions($Plugins::Spotty::Plugin::VERSION, '0.8.0') >= 0
-		) {
-			$hasSpotty = 1;	
-		}
-		
-		$hasSpotty ||= 0;
-	}
-
-	return if $hasSpotty;
-	
-	if (!defined $use3rdPartySpotify) {
-		$use3rdPartySpotify = (Slim::Utils::PluginManager->isEnabled('Plugins::Spotify::Plugin') || Slim::Utils::PluginManager->isEnabled('Plugins::SpotifyProtocolHandler::Plugin')) ? 1 : 0;
-	}
-	
-	return if $Plugins::LastMix::Plugin::NOMYSB && !$use3rdPartySpotify; 
-
-	return unless $use3rdPartySpotify || Slim::Utils::PluginManager->isEnabled('Slim::Plugin::SpotifyLogi::Plugin');
-	
-	return unless $use3rdPartySpotify || $client->isAppEnabled('Spotify');
-	
-	# spotify on ip3k only with Triode's plugin
-	return unless $use3rdPartySpotify || ($client->isa('Slim::Player::SqueezePlay') && $client->model ne 'squeezeplay');
-
-	return 'spotify';
-} 
-
-sub protocol { 'spotify' }
-
-sub searchUrl {
-	my ($class) = @_;
-	sprintf('/api/spotify/v1/opml/search?type=track&q=track:%s%%20artist:%s', URI::Escape::uri_escape_utf8($class->args->{title}), URI::Escape::uri_escape_utf8($class->args->{artist}));
-}
-
-1;
-
-
 package Plugins::LastMix::Services::Napster;
 
 use base qw(Plugins::LastMix::Services::Base);
 
 sub isEnabled {
 	my ($class, $client) = @_;
-	
+
 	return if $Plugins::LastMix::Plugin::NOMYSB;
-	
+
 	return if !$client;
-	
+
 	return if !$client->isa('Slim::Player::Squeezebox2') || $client->model eq 'squeezeplay';
 
 	return unless Slim::Utils::PluginManager->isEnabled('Slim::Plugin::RhapsodyDirect::Plugin');
-	
+
 	return if !($client->isAppEnabled('RhapsodyDirect') || $client->isAppEnabled('RhapsodyEU')); 
-	
+
 	return 'napster';
-} 
+}
 
 sub protocol { 'rhapd' }
 
