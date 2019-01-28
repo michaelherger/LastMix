@@ -21,10 +21,10 @@ sub init {
 
 sub getUsername {
 	my ( $class, $client ) = @_;
-	
+
 	my $lfmPrefs = preferences('plugin.audioscrobbler');
 	my $username = $lfmPrefs->client($client->master)->get('account') if $client;
-	
+
 	if (!$username) {
 		my $accounts = $lfmPrefs->get('accounts');
 		if ($accounts && ref $accounts && scalar @$accounts) {
@@ -34,20 +34,20 @@ sub getUsername {
 			}
 		}
 	}
-	
+
 	return $username;
 }
 
 sub getSimilarTracks {
 	my ( $class, $cb, $args ) = @_;
-	
+
 	if ($args->{mbid}) {
 		_call({
 			method => 'track.getSimilar',
 			mbid => $args->{mbid},
 		}, sub {
 			my $results = shift;
-			
+
 			if ( $results && ref $results && $results->{similartracks} && ref $results->{similartracks} ) {
 				$cb->($results);
 			}
@@ -63,7 +63,7 @@ sub getSimilarTracks {
 
 sub getLovedTracks {
 	my ( $class, $cb, $args ) = @_;
-	
+
 	if ( my $username = $class->getUsername ) {
 		_call({
 			method => 'user.getLovedTracks',
@@ -71,7 +71,7 @@ sub getLovedTracks {
 		}, sub {
 			my $results = shift;
 
-#warn Data::Dump::dump($results);			
+#warn Data::Dump::dump($results);
 			if ( $results && ref $results && $results->{similartracks} && ref $results->{similartracks} ) {
 #				$cb->($results);
 			}
@@ -87,7 +87,7 @@ sub getLovedTracks {
 
 sub getSimilarTracksByName {
 	my ( $class, $cb, $args ) = @_;
-	
+
 	_call({
 		method => 'track.getSimilar',
 		artist => $args->{artist},
@@ -101,7 +101,7 @@ sub getSimilarTracksByName {
 =pod
 sub getTrackTags {
 	my ( $class, $cb, $args ) = @_;
-	
+
 	_call({
 		method => 'track.getTopTags',
 		artist => $args->{artist},
@@ -115,7 +115,7 @@ sub getTrackTags {
 
 sub getSimilarArtists {
 	my ( $class, $cb, $args ) = @_;
-	
+
 	if ($args->{mbid}) {
 		_call({
 			method => 'artist.getSimilar',
@@ -123,7 +123,7 @@ sub getSimilarArtists {
 			limit => 25,
 		}, sub {
 			my $results = shift;
-			
+
 			if ( $results && ref $results && $results->{similarartists} && ref $results->{similarartists} ) {
 				$cb->($results);
 			}
@@ -139,7 +139,7 @@ sub getSimilarArtists {
 
 sub getSimilarArtistsByName {
 	my ( $class, $cb, $args ) = @_;
-	
+
 	_call({
 		method => 'artist.getSimilar',
 		artist => $args->{artist},
@@ -152,7 +152,7 @@ sub getSimilarArtistsByName {
 
 sub getFavouriteArtists {
 	my ( $class, $cb, $args ) = @_;
-	
+
 	_call({
 		method => 'user.getTopArtists',
 		username => $args->{username} || $class->getUsername(),
@@ -164,14 +164,14 @@ sub getFavouriteArtists {
 
 sub getArtistTags {
 	my ( $class, $cb, $args ) = @_;
-	
+
 	if ($args->{mbid}) {
 		_call({
 			method => 'artist.getTopTags',
 			mbid => $args->{mbid},
 		}, sub {
 			my $results = shift;
-			
+
 			if ( $results && ref $results && $results->{toptags} && ref $results->{toptags} ) {
 				$cb->($results);
 			}
@@ -187,7 +187,7 @@ sub getArtistTags {
 
 sub getArtistTagsByArtistName {
 	my ( $class, $cb, $args ) = @_;
-	
+
 	_call({
 		method => 'artist.getTopTags',
 		artist => $args->{artist},
@@ -199,14 +199,14 @@ sub getArtistTagsByArtistName {
 
 sub getArtistTopTracks {
 	my ( $class, $cb, $args ) = @_;
-	
+
 	if ($args->{mbid}) {
 		_call({
 			method => 'artist.getTopTracks',
 			mbid => $args->{mbid},
 		}, sub {
 			my $results = shift;
-			
+
 			if ( $results && ref $results && $results->{toptracks} && ref $results->{toptracks} ) {
 				$cb->($results);
 			}
@@ -222,7 +222,7 @@ sub getArtistTopTracks {
 
 sub getArtistTopTracksByArtistName {
 	my ( $class, $cb, $args ) = @_;
-	
+
 	_call({
 		method => 'artist.getTopTracks',
 		artist => $args->{artist},
@@ -234,10 +234,11 @@ sub getArtistTopTracksByArtistName {
 
 sub getTagTopTracks {
 	my ( $class, $cb, $args ) = @_;
-	
+
 	_call({
 		method => 'tag.getTopTracks',
 		tag => $args->{tag},
+		limit => $args->{limit} || 50,
 		autocorrect => 1,
 	}, sub {
 		$cb->(shift);
@@ -251,50 +252,50 @@ sub _call {
 
 	$params ||= {};
 	my @query;
-	
+
 	while (my ($k, $v) = each %$params) {
 		next if $k =~ /^_/;		# ignore keys starting with an underscore
 		push @query, $k . '=' . uri_escape_utf8($v);
 	}
-	
+
 	my $url = BASE_URL . '?' . join( '&', sort @query, 'api_key=' . aid(), 'format=json' );
 	$url =~ s/\?$//;
-	
+
 	if ( !$params->{_nocache} && (my $cached = $cache->get($url)) ) {
 		$cb->($cached);
 		return;
 	}
 
 	main::INFOLOG && $log->is_info && $log->info((main::SCANNER ? 'Sync' : 'Async') . ' API call: GET ' . _debug($url) );
-	
+
 	$params->{timeout} ||= 15;
-	
+
 	if ( !$params->{_nocache} ) {
 		$params->{cache} = 1;
 		$params->{expires} = CACHE_TTL;
 	}
-	
+
 	my $cb2 = sub {
 		my $response = shift;
-		
+
 		main::DEBUGLOG && $log->is_debug && $response->code !~ /2\d\d/ && $log->debug(_debug(Data::Dump::dump($response, @_)));
 		my $result = eval { from_json( $response->content ) };
-	
+
 		$result ||= {};
-		
+
 		if ($@) {
 			 $log->error($@);
 			 $result->{error} = $@;
 		}
 
 		main::DEBUGLOG && $log->is_debug && warn Data::Dump::dump($result);
-		
+
 		$cache->set($url, $result, CACHE_TTL) if !$params->{_nocache};
-			
+
 		$cb->($result);
 	};
-	
-	Slim::Networking::SimpleAsyncHTTP->new( 
+
+	Slim::Networking::SimpleAsyncHTTP->new(
 		$cb2,
 		$cb2,
 		$params
@@ -307,10 +308,10 @@ sub aid {
 		$aid =~ s/-//g;
 		$cache->set('lfm_aid', $aid, 'never');
 	}
-	
+
 	$aid ||= $cache->get('lfm_aid');
 
-	return $aid; 
+	return $aid;
 }
 
 sub _debug {
