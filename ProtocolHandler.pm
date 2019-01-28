@@ -4,6 +4,7 @@ use strict;
 
 use Plugins::LastMix::LFM;
 
+# TODO - custom icon
 use constant ICON => 'plugins/DontStopTheMusic/html/images/icon.png';
 
 sub overridePlayback {
@@ -16,11 +17,11 @@ sub overridePlayback {
 		return if $client->controller()->playingSongDuration()
 	}
 
-	my ($tags) = $url =~ m|^lastmix://tags\?tags=(.*)|;
+	my ($command, $tags) = $url =~ m{^lastmix://(play|add)\?tags=(.*)};
 
 	return unless $tags;
 
-	$client->execute(["lastmix", "tags:$tags"]);
+	$client->execute(["lastmix", $command, "tags:$tags"]);
 
 	return 1;
 }
@@ -36,16 +37,14 @@ sub getMetadataFor {
 
 	return unless $client && $url;
 
-	# TODO - add genre as part of the title, custom icon etc.
-	# my ($type) = $url =~ m{randomplay://(track|contributor|album|year)s?$};
-	my $title = 'PLUGIN_LASTMIX_DSTM_ITEM';
+	my $title = $client->string('PLUGIN_LASTMIX_DSTM_ITEM');
 
-	# if ($type) {
-	# 	$title = 'PLUGIN_RANDOM_' . uc($type);
-	# }
+	if ( my ($genres) = $url =~ m{lastmix://(?:play|add|tags)\?tags=(.*)} ) {
+		$title .= ' (' . join(', ', map { s/^\s+|\s+$//g; ucfirst($_) } split(',', $genres)) . ')';
+	}
 
 	return {
-		title => $client->string($title),
+		title => $title,
 		cover => $class->getIcon(),
 	};
 }

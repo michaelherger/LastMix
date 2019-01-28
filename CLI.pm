@@ -11,8 +11,8 @@ use Plugins::LastMix::LFM;
 my $log = logger('plugin.lastmix');
 
 sub init {
-	# TODO - add support for play/add
-	Slim::Control::Request::addDispatch(['lastmix'], [1, 0, 1, \&_cliMix]);
+	Slim::Control::Request::addDispatch(['lastmix', 'play'], [1, 0, 1, \&_cliMix]);
+	Slim::Control::Request::addDispatch(['lastmix', 'add'], [1, 0, 1, \&_cliMix]);
 }
 
 sub _cliMix {
@@ -25,7 +25,11 @@ sub _cliMix {
 		return;
 	}
 
-	# get the tags
+	if ($request->isNotCommand([['lastmix'], ['play','add']])) {
+		$request->setStatusBadDispatch();
+		return;
+	}
+
 	my $tags = $request->getParam('tags');
 
 	if (!$tags) {
@@ -80,7 +84,8 @@ sub _gotTagTracks {
 			my ($client, $tracks) = @_;
 
 			if ( $tracks && scalar @$tracks ) {
-				$client->execute(['playlist', 'playtracks', 'listRef', $tracks]);
+				my $cmd = $request->getRequest(1);
+				$client->execute(['playlist', $cmd . 'tracks', 'listRef', $tracks]);
 			}
 
 			$request->setStatusDone();
