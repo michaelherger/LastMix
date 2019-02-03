@@ -61,6 +61,7 @@ sub getSimilarTracks {
 	}
 }
 
+=pod
 sub getLovedTracks {
 	my ( $class, $cb, $args ) = @_;
 
@@ -84,6 +85,7 @@ sub getLovedTracks {
 		$class->getSimilarTracksByName($cb, $args);
 	}
 }
+=cut
 
 sub getSimilarTracksByName {
 	my ( $class, $cb, $args ) = @_;
@@ -245,6 +247,16 @@ sub getTagTopTracks {
 	});
 }
 
+sub getTopTags {
+	my ( $class, $cb, $args ) = @_;
+
+	_call({
+		method => 'tag.getTopTags',
+		num_res => $args->{limit} || 200
+	}, sub {
+		$cb->(shift);
+	});
+}
 
 
 sub _call {

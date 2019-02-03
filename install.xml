@@ -4,6 +4,7 @@
 	<creator>Michael Herger</creator>
 	<defaultState>enabled</defaultState>
 	<description>PLUGIN_LASTMIX_DESC</description>
+	<icon>plugins/LastMix/html/icon.png</icon>
 	<email>slim@herger.net</email>
 <!-- 	<homepageURL>http://www.herger.net/LastMix</homepageURL> -->
 	<id>9a8b1cdd-e3fc-45eb-9c15-6c867079fa72</id>

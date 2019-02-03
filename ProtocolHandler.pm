@@ -4,9 +4,6 @@ use strict;
 
 use Plugins::LastMix::LFM;
 
-# TODO - custom icon
-use constant ICON => 'plugins/DontStopTheMusic/html/images/icon.png';
-
 sub overridePlayback {
 	my ( $class, $client, $url ) = @_;
 
@@ -37,7 +34,7 @@ sub getMetadataFor {
 
 	return unless $client && $url;
 
-	my $title = $client->string('PLUGIN_LASTMIX_DSTM_ITEM');
+	my $title = $client->string('PLUGIN_LASTMIX_NAME');
 
 	if ( my ($genres) = $url =~ m{lastmix://(?:play|add|tags)\?tags=(.*)} ) {
 		$title .= ' (' . join(', ', map { s/^\s+|\s+$//g; ucfirst($_) } split(',', $genres)) . ')';
@@ -49,6 +46,8 @@ sub getMetadataFor {
 	};
 }
 
-sub getIcon { ICON }
+sub getIcon { 
+	return Plugins::LastMix::Plugin->_pluginDataFor('icon');
+}
 
 1;
