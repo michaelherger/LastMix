@@ -3,9 +3,10 @@ package Plugins::LastMix::Plugin;
 use strict;
 use Tie::Cache::LRU;
 
-use base qw(Slim::Plugin::Base);
+use base qw(Slim::Plugin::OPMLBased);
 
 use Slim::Utils::Log;
+use Slim::Utils::Strings qw(cstring);
 
 # XXX - make this user-adjustable? Large number risks to create undesired mix if seed was
 # too narrow (eg. accidentally all tracks of the same album). Small number will require more
@@ -56,11 +57,78 @@ sub postinitPlugin {
 		Slim::Player::ProtocolHandlers->registerHandler(
 			lastmix => 'Plugins::LastMix::ProtocolHandler'
 		);
+
+		$class->SUPER::initPlugin(
+			feed   => \&handleFeed,
+			tag    => 'lastmix',
+			menu   => 'radios',
+			is_app => 1,
+			weight => 5,
+		);
 	}
 	else {
 		Slim::Utils::Log::logError("The LastMix plugin requires the Don't Stop The Music plugin to be enabled - which is not the case.");
 	}
 }
+
+sub handleFeed {
+	my ($client, $cb, $args) = @_;
+
+	$cb->({
+		items => [{
+			name => cstring($client, 'PLUGIN_LASTMIX_TOP_TAGS_ALPAHBETICALLY'),
+			url => \&topTagsFeed,
+			passthrough => [{
+				sort => 'alpha'
+			}]
+		},{
+			name => cstring($client, 'PLUGIN_LASTMIX_TOP_TAGS_BY_COUNT'),
+			url => \&topTagsFeed,
+		}]
+	});
+}
+
+sub topTagsFeed {
+	my ($client, $cb, $args, $pt) = @_;
+
+	$pt ||= {};
+
+	Plugins::LastMix::LFM->getTopTags( sub {
+		my $tagData = shift;
+
+		# Build main menu structure
+		my $items = [];
+
+		my $topTags;
+
+		eval {
+			$topTags = $tagData->{toptags}->{tag};
+		};
+
+		$log->error($@) if $@;
+
+		if ($topTags && ref $topTags) {
+			if ($pt->{sort} && $pt->{sort} eq 'alpha') {
+				$topTags = [ sort { lc($a->{name}) cmp lc($b->{name}) } @$topTags ];
+			}
+
+			foreach my $tag (@$topTags) {
+				push @$items, {
+					type => 'audio',
+					name => ucfirst($tag->{name}),
+					url => 'lastmix://play?tags=' . $tag->{name},
+				}
+			}
+		}
+
+		$cb->({
+			items => $items,
+		});
+	} );
+}
+
+sub getDisplayName { 'PLUGIN_LASTMIX_NAME' }
+sub playerMenu {}
 
 sub checkTracks {
 	my ($client, $cb) = @_;

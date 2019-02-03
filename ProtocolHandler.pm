@@ -46,7 +46,7 @@ sub getMetadataFor {
 	};
 }
 
-sub getIcon { 
+sub getIcon {
 	return Plugins::LastMix::Plugin->_pluginDataFor('icon');
 }
 
