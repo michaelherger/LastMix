@@ -6,8 +6,8 @@ PLUGIN_LASTMIX_DESC
 	EN	LastMix allows you to create Last.fm based mixes for the "Don't Stop The Music" plugin.
 
 PLUGIN_LASTMIX_DSTM_LOCAL_ONLY
-	DE	LastMix (nur lokale Musik)
-	EN	LastMix (local music files only)
+	DE	LastMix (nur eigene Musik)
+	EN	LastMix (your music only)
 
 PLUGIN_LASTMIX_DSTM_ITEM
 	DE	LastMix - Musikwiedergabe mit Hilfe von Last.fm nie anhalten.
