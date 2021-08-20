@@ -4,23 +4,29 @@ PLUGIN_LASTMIX_NAME
 PLUGIN_LASTMIX_DESC
 	DE	LastMix bietet die Möglichkeit, mit Hilfe von Last.fm automatische Mixes für das "Don't Stop The Music" Plugin zu erstellen.
 	EN	LastMix allows you to create Last.fm based mixes for the "Don't Stop The Music" plugin.
+	FR	LastMix, à l'aide de Last.fm, permet de créer automatiquement des compilations personnalisées pour le plugin "N'arrêtez pas la musique".
 
 PLUGIN_LASTMIX_DSTM_LOCAL_ONLY
 	DE	LastMix (nur eigene Musik)
 	EN	LastMix (your music only)
+	FR	LastMix (fichiers locaux uniquement)
 
 PLUGIN_LASTMIX_DSTM_ITEM
 	DE	LastMix - Musikwiedergabe mit Hilfe von Last.fm nie anhalten.
 	EN	LastMix - Don't Stop The Music support using Last.fm.
+	FR	LastMix - N'arrêtez jamais la lecture de musique en utilisant Last.fm.
 
 PLUGIN_LASTMIX_DSTM_YOUR_FAVORITE_ARTISTS
 	DE	LastMix - Deine Lieblingskünstler
 	EN	LastMix - Your Favorite Artists
+	FR	LastMix - Vos artistes préférés
 
 PLUGIN_LASTMIX_TOP_TAGS_BY_COUNT
 	DE	Top Tags (nach Häufigkeit)
 	EN	Top Tags (by count)
+	FR	Top Tags (par fréquence)
 
 PLUGIN_LASTMIX_TOP_TAGS_ALPAHBETICALLY
 	DE	Top Tags (alphabetisch sortiert)
 	EN	Top Tags (in alphabetical order)
+	FR	Top Tags (par ordre alphabétique)
