@@ -6,10 +6,17 @@ PLUGIN_LASTMIX_DESC
 	EN	LastMix allows you to create Last.fm based mixes for the "Don't Stop The Music" plugin.
 	FR	LastMix, à l'aide de Last.fm, permet de créer automatiquement des compilations personnalisées pour le plugin "N'arrêtez pas la musique".
 
-PLUGIN_LASTMIX_DSTM_LOCAL_ONLY
-	DE	LastMix (nur eigene Musik)
-	EN	LastMix (your music only)
-	FR	LastMix (fichiers locaux uniquement)
+PLUGIN_LASTMIX_DSTM_MYMUSIC_ONLY
+	DE	LastMix (nur "Eigene Musik")
+	EN	LastMix ("My Music" only)
+	FR	LastMix ("Ma musique" uniquement)
+
+# This is no longer "local" music only, as we're integrating online libraries.
+# A "local files only" doesn't make much sense, as Last.fm needs online access anyway.
+#PLUGIN_LASTMIX_DSTM_LOCAL_ONLY
+#	DE	LastMix (nur lokale Musikdateien)
+#	EN	LastMix (local music files only)
+#	FR	LastMix (fichiers locaux uniquement)
 
 PLUGIN_LASTMIX_DSTM_ITEM
 	DE	LastMix - Musikwiedergabe mit Hilfe von Last.fm nie anhalten.

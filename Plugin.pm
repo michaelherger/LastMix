@@ -48,7 +48,7 @@ sub postinitPlugin {
 		Plugins::LastMix::CLI->init();
 		Plugins::LastMix::DontStopTheMusic->init($class);
 		Slim::Plugin::DontStopTheMusic::Plugin->registerHandler('PLUGIN_LASTMIX_DSTM_ITEM', \&Plugins::LastMix::DontStopTheMusic::please);
-		Slim::Plugin::DontStopTheMusic::Plugin->registerHandler('PLUGIN_LASTMIX_DSTM_LOCAL_ONLY', \&Plugins::LastMix::DontStopTheMusic::myMusicOnlyPlease);
+		Slim::Plugin::DontStopTheMusic::Plugin->registerHandler('PLUGIN_LASTMIX_DSTM_MYMUSIC_ONLY', \&Plugins::LastMix::DontStopTheMusic::myMusicOnlyPlease);
 
 		if ( Plugins::LastMix::LFM->getUsername() ) {
 			Slim::Plugin::DontStopTheMusic::Plugin->registerHandler('PLUGIN_LASTMIX_DSTM_YOUR_FAVORITE_ARTISTS', \&Plugins::LastMix::DontStopTheMusic::favouriteArtistMix);
@@ -289,7 +289,7 @@ sub _checkTrack {
 		}
 	}
 
-	if ( !$client->pluginData('localMusicOnly') && (my $serviceHandler = Plugins::LastMix::Services->getServiceHandler($client)) ) {
+	if ( !$client->pluginData('myMusicOnly') && (my $serviceHandler = Plugins::LastMix::Services->getServiceHandler($client)) ) {
 		$serviceHandler->lookup($client, sub {
 			my ($url) = @_;
 

@@ -40,10 +40,10 @@ sub init {
 }
 
 sub please {
-	my ($client, $cb, $seedTracks, $localMusicOnly) = @_;
+	my ($client, $cb, $seedTracks, $myMusicOnly) = @_;
 
 	$client = $client->master;
-	$client->pluginData( localMusicOnly => ($localMusicOnly || 0) );
+	$client->pluginData( myMusicOnly => ($myMusicOnly || 0) );
 	Plugins::LastMix::Plugin::initClientPluginData($client);
 
 	trackMix(@_);
