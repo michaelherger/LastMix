@@ -37,6 +37,7 @@ my $aid;
 
 sub init {
 	Plugins::LastMix::LFM->init($_[1]);
+	Plugins::LastMix::Services->init();
 }
 
 sub please {

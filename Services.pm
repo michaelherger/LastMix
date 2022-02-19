@@ -38,6 +38,14 @@ sub getServiceHandler {
 	return $serviceHandler;
 }
 
+sub init {
+	foreach my $service ( @serviceHandlers ) {
+		if ($service->can('init')) {
+			$service->init();
+		}
+	}
+}
+
 sub extractTrack {
 	my ($class, $candidates, $args) = @_;
 
@@ -65,14 +73,14 @@ sub extractTrack {
 	if (main::INFOLOG && $log->is_info) {
 		$log->info("Trying to match criteria: " . Data::Dump::dump($args));
 		main::DEBUGLOG && $log->is_debug && $log->debug( Data::Dump::dump(
-			map { "$_->{title} - $_->{artist}" } 
+			map { "$_->{title} - $_->{artist}" }
 			grep { $_->{title} =~ /^\Q$title\E/ || $title =~ /^\Q$_->{title}\E/ }
 			@$candidates)
 		);
 	}
 
 	# we don't care about tracks which don't even match the start of the title name
-	my @candidates = grep { 
+	my @candidates = grep {
 		$_->{title} =~ /^\Q$title\E/
 	} @$candidates;
 
@@ -85,9 +93,9 @@ sub extractTrack {
 	# "artist *" - "title *"
 	($url) = map { $_->{url} } grep { $_->{artist} =~ /^\Q$artist\E/ } @candidates unless $url;
 	($url) = map { $_->{url} } grep { $artist =~ /^\Q$_->{artist}\E/ } @candidates unless $url;
-	
-	@candidates = grep { 
-		$title =~ /^\Q$_->{title}\E/ 
+
+	@candidates = grep {
+		$title =~ /^\Q$_->{title}\E/
 	} @$candidates unless $url;
 
 	# "title *" - "artist *"
@@ -176,7 +184,7 @@ sub gotResults {
 				artist => $_->{line2},
 				url    => $_->{play},
 			}
-		} grep { 
+		} grep {
 			$_->{play} && $_->{play} =~ /^\Q$protocol\E:/
 		} @{$feed->{items}};
 	}
@@ -229,15 +237,29 @@ sub searchUrl {
 package Plugins::LastMix::Services::Deezer;
 
 use base qw(Plugins::LastMix::Services::Base);
+use JSON::XS::VersionOneAndTwo;
+
+use constant ACCOUNTS_URL  => '/api/deezer/v1/opml/library/getAccounts';
+
+my $isPremium;
+sub init {
+	return if $Plugins::LastMix::Plugin::NOMYSB;
+	return unless Slim::Utils::PluginManager->isEnabled('Slim::Plugin::Deezer::Plugin');
+
+	Slim::Networking::SqueezeNetwork->new(
+		sub {
+			my $http = shift;
+			my $accounts = eval { from_json( $http->content ) };
+			$isPremium = scalar @$accounts unless $@;
+		},
+		sub {},
+	)->get(Slim::Networking::SqueezeNetwork->url(ACCOUNTS_URL));
+}
 
 sub isEnabled {
 	my ($class, $client) = @_;
 
-	return if $Plugins::LastMix::Plugin::NOMYSB;
-
-	return unless $client;
-	return unless Slim::Utils::PluginManager->isEnabled('Slim::Plugin::Deezer::Plugin');
-
+	return unless $isPremium && $client;
 	return $client->isAppEnabled('Deezer') ? 'deezer' : undef;
 }
 
@@ -265,7 +287,7 @@ sub isEnabled {
 
 	return unless Slim::Utils::PluginManager->isEnabled('Slim::Plugin::RhapsodyDirect::Plugin');
 
-	return if !($client->isAppEnabled('RhapsodyDirect') || $client->isAppEnabled('RhapsodyEU')); 
+	return if !($client->isAppEnabled('RhapsodyDirect') || $client->isAppEnabled('RhapsodyEU'));
 
 	return 'napster';
 }
