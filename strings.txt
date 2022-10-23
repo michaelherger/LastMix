@@ -11,6 +11,11 @@ PLUGIN_LASTMIX_DSTM_MYMUSIC_ONLY
 	EN	LastMix ("My Music" only)
 	FR	LastMix ("Ma musique" uniquement)
 
+PLUGIN_LASTMIX_DSTM_CURRENT_LIBRARYVIEW_ONLY
+	DE	LastMix (nur aktuelle Bibliotheksansicht)
+	EN	LastMix (current Library View only)
+	FR	LastMix (bibliothèque thématique active uniquement)
+
 # This is no longer "local" music only, as we're integrating online libraries.
 # A "local files only" doesn't make much sense, as Last.fm needs online access anyway.
 #PLUGIN_LASTMIX_DSTM_LOCAL_ONLY

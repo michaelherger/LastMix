@@ -49,6 +49,7 @@ sub postinitPlugin {
 		Plugins::LastMix::DontStopTheMusic->init($class);
 		Slim::Plugin::DontStopTheMusic::Plugin->registerHandler('PLUGIN_LASTMIX_DSTM_ITEM', \&Plugins::LastMix::DontStopTheMusic::please);
 		Slim::Plugin::DontStopTheMusic::Plugin->registerHandler('PLUGIN_LASTMIX_DSTM_MYMUSIC_ONLY', \&Plugins::LastMix::DontStopTheMusic::myMusicOnlyPlease);
+		Slim::Plugin::DontStopTheMusic::Plugin->registerHandler('PLUGIN_LASTMIX_DSTM_CURRENT_LIBRARYVIEW_ONLY', \&Plugins::LastMix::DontStopTheMusic::currentLibraryViewOnlyPlease);
 
 		if ( Plugins::LastMix::LFM->getUsername() ) {
 			Slim::Plugin::DontStopTheMusic::Plugin->registerHandler('PLUGIN_LASTMIX_DSTM_YOUR_FAVORITE_ARTISTS', \&Plugins::LastMix::DontStopTheMusic::favouriteArtistMix);
@@ -188,13 +189,16 @@ sub _checkTrack {
 
 	my $tracks = $client->pluginData('tracks') || [];
 	my $artist = Slim::Utils::Text::ignoreCase( $candidate->{artist}, 1 );
+	my $library_id = $client->pluginData('libraryViewOnly') ? Slim::Music::VirtualLibraries->getLibraryIdForClient($client) : undef;
 
 	if ( !$unknownArtists{$artist} ) {
 		if ( $candidate->{mbid} ) {
 			# try track search by musicbrainz ID first
 			my $sth_get_track_by_mbid = $dbh->prepare_cached( qq{
 				SELECT tracks.url
-				FROM tracks
+				FROM tracks } . ($library_id ? qq{
+					JOIN library_track ON library_track.library = '$library_id' AND tracks.id = library_track.track
+				} : '') . qq{
 				WHERE musicbrainz_id = ?
 				LIMIT 1
 			} );
@@ -256,8 +260,12 @@ sub _checkTrack {
 			my $sth_get_track_by_name_and_artist = $dbh->prepare_cached( qq{
 				SELECT tracks.url
 				FROM tracks, contributor_track
+				} . ($library_id ? qq{
+					JOIN library_track ON library_track.library = '$library_id' AND tracks.id = library_track.track
+				} : '') . qq{
 				WHERE titlesearch LIKE ?
-				AND contributor_track.track = tracks.id AND contributor_track.contributor = ?
+					AND contributor_track.track = tracks.id
+					AND contributor_track.contributor = ?
 				LIMIT 1
 			} );
 

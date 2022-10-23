@@ -41,10 +41,12 @@ sub init {
 }
 
 sub please {
-	my ($client, $cb, $seedTracks, $myMusicOnly) = @_;
+	my ($client, $cb, $seedTracks, $myMusicOnly, $libraryViewOnly) = @_;
 
 	$client = $client->master;
-	$client->pluginData( myMusicOnly => ($myMusicOnly || 0) );
+	# can't have libraryViewOnly without myMusicOnly, as it only applies to the latter anyway
+	$client->pluginData( myMusicOnly => ($libraryViewOnly || $myMusicOnly || 0) );
+	$client->pluginData( libraryViewOnly => ($libraryViewOnly || 0) );
 	Plugins::LastMix::Plugin::initClientPluginData($client);
 
 	trackMix(@_);
@@ -53,6 +55,11 @@ sub please {
 sub myMusicOnlyPlease {
 	my ($client, $cb, $seedTracks) = @_;
 	please($client, $cb, $seedTracks, 1);
+}
+
+sub currentLibraryViewOnlyPlease {
+	my ($client, $cb, $seedTracks) = @_;
+	please($client, $cb, $seedTracks, 1, 1);
 }
 
 sub trackMix {
