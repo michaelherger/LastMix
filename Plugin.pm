@@ -14,6 +14,7 @@ use Slim::Utils::Strings qw(cstring);
 use constant MAX_TRACKS => 5;
 
 use constant NOMYSB => Slim::Utils::Versions->compareVersions($::VERSION, '7.9') >= 0 && main::NOMYSB() ? 1 : 0;
+use constant CAN_BALANCED_SHUFFLE => UNIVERSAL::can('Slim::Player::Playlist', 'balancedShuffle') ? 1 : 0;
 
 # we're going to cache some information about our artists during the resolving process
 tie my %unknownArtists, 'Tie::Cache::LRU', 128;
@@ -136,6 +137,33 @@ sub checkTracks {
 
 	my $candidates = $client->pluginData('candidates');
 
+	# shuffle the playlist, trying to prevent repeated plays
+	if (!$client->pluginData('shuffled')) {
+		$client->pluginData(shuffled => 1);
+
+		if (CAN_BALANCED_SHUFFLE) {
+			my $mbidToTrackinfoMap = {};
+			foreach (@$candidates) {
+				$mbidToTrackinfoMap->{$_->{mbid} || $_->{title} . $_->{artist}} = $_;
+			}
+
+			my $shuffledIds = Slim::Player::Playlist::balancedShuffle([
+				map {
+					[$_, $mbidToTrackinfoMap->{$_}->{artist_mbid} || $mbidToTrackinfoMap->{$_}->{artist}]
+				} keys %$mbidToTrackinfoMap
+			]);
+
+			$candidates = [ map {
+				$mbidToTrackinfoMap->{$_}
+			} @$shuffledIds ];
+		}
+		else {
+			Slim::Player::Playlist::fischer_yates_shuffle($candidates);
+		}
+
+		$client->pluginData(candidates => $candidates);
+	}
+
 	my $tracks = $client->pluginData('tracks');
 	if ( $tracks && ref $tracks ) {
 
@@ -157,9 +185,6 @@ sub checkTracks {
 
 	# process next candidate if possible
 	if ( $candidates && ref $candidates && scalar @$candidates ) {
-		# shuffle the playlist, trying to prevent repeated plays
-		Slim::Player::Playlist::fischer_yates_shuffle($candidates);
-
 		_checkTrack($client, $cb, shift @$candidates);
 		return;
 	}
@@ -169,8 +194,6 @@ sub checkTracks {
 	if ( $tracks && ref $tracks && scalar @$tracks ) {
 		# we're done mixing - clean up our data
 		initClientPluginData($client);
-
-		Slim::Player::Playlist::fischer_yates_shuffle($tracks);
 
 		$cb->($client, $tracks);
 		return;
@@ -322,6 +345,7 @@ sub initClientPluginData {
 	$client->pluginData( tracks => [] );
 	$client->pluginData( artists => {} );
 	$client->pluginData( tags => {} );
+	$client->pluginData( shuffled => 0 );
 	$client->pluginData( candidates => [] );
 	$client->pluginData( seed => [] );
 }

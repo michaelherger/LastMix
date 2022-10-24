@@ -361,6 +361,7 @@ sub _parseTracks {
 			} @$candidates ];
 
 			push @$candidates, @{ $client->pluginData('candidates') };
+			$client->pluginData( shuffled => 0 );
 			$client->pluginData( candidates => $candidates );
 		}
 	}

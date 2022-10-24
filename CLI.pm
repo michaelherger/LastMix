@@ -69,10 +69,9 @@ sub _gotTagTracks {
 				}
 			} @$candidates ];
 
-			Slim::Player::Playlist::fischer_yates_shuffle($candidates);
-
 			my $tagTracks = $client->pluginData('candidates') || [];
 			push @$tagTracks, grep { $_ } @$candidates;
+			$client->pluginData(shuffled => 0);
 			$client->pluginData(candidates => $tagTracks);
 		}
 	}
