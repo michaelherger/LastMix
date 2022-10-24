@@ -10,6 +10,7 @@ use Slim::Utils::Prefs;
 
 use constant BASE_URL => 'http://ws.audioscrobbler.com/2.0/';
 use constant CACHE_TTL => 60*60*24;
+use constant LASTFM_MAX_ITEMS => 149;
 
 my $cache = Slim::Utils::Cache->new;
 my $log = logger('plugin.lastmix');
@@ -252,7 +253,7 @@ sub getTopTags {
 
 	_call({
 		method => 'tag.getTopTags',
-		num_res => $args->{limit} || 200
+		num_res => $args->{limit} || LASTFM_MAX_ITEMS
 	}, sub {
 		$cb->(shift);
 	});

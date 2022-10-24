@@ -8,6 +8,8 @@ use Slim::Utils::Log;
 use Plugins::LastMix::Plugin;
 use Plugins::LastMix::LFM;
 
+use constant LASTFM_MAX_ITEMS => 149;
+
 my $log = logger('plugin.lastmix');
 
 sub init {
@@ -47,7 +49,7 @@ sub _cliMix {
 			_gotTagTracks($client, $tag, $request, @_);
 		}, {
 			tag => $tag,
-			limit => 500
+			limit => LASTFM_MAX_ITEMS
 		});
 	}
 }
