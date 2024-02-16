@@ -301,7 +301,7 @@ sub _call {
 			 $result->{error} = $@;
 		}
 
-		main::DEBUGLOG && $log->is_debug && warn Data::Dump::dump($result);
+		main::DEBUGLOG && $log->is_debug && $log->debug(Data::Dump::dump($result));
 
 		$cache->set($url, $result, CACHE_TTL) if !$params->{_nocache};
 

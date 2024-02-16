@@ -17,6 +17,8 @@ my $serviceHandler;
 sub registerHandler {
 	my ($class, $handlerClass, $lossless) = @_;
 
+	main::INFOLOG && $log->is_info && $log->info("Registering $handlerClass: " . ($lossless ? 'lossless' : 'lossy'));
+
 	# if a plugin claims to be lossless streaming, put it at the top, otherwise below the top
 	splice @serviceHandlers, ($lossless ? 0 : 1), 0, $handlerClass;
 }
@@ -28,6 +30,7 @@ sub getServiceHandler {
 		foreach my $service ( @serviceHandlers ) {
 			if ( $service->isEnabled($client) ) {
 				$serviceHandler = $service->new($client);
+				main::DEBUGLOG && $log->is_debug && $log->debug("Using $serviceHandler");
 				last;
 			}
 		}
