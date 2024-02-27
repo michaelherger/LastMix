@@ -149,19 +149,9 @@ sub isEnabled {}
 sub lookup {
 	my ($class, $client, $cb, $args) = @_;
 
-	$class->client($client) if $client;
-	$class->cb($cb) if $cb;
-	$class->args($args) if $args;
+	$log->error("No LastMix lookup() method defined for $class!");
 
-	Slim::Formats::XML->getFeedAsync(
-		\&gotResults,
-		\&gotError,
-		{
-			client => $client,
-			url => Slim::Networking::SqueezeNetwork->url( $class->searchUrl ),
-			class => $class,
-		},
-	);
+	$cb->();
 }
 
 sub gotResults {
@@ -208,98 +198,5 @@ sub gotError {
 
 sub protocol {}
 sub searchUrl {}
-
-1;
-
-
-package Plugins::LastMix::Services::Tidal;
-
-use base qw(Plugins::LastMix::Services::Base);
-
-sub isEnabled {
-	my ($class, $client) = @_;
-
-	return if $Plugins::LastMix::Plugin::NOMYSB;
-
-	return unless $client;
-	return unless Slim::Utils::PluginManager->isEnabled('Slim::Plugin::WiMP::Plugin');
-
-	return ( $client->isAppEnabled('WiMP') || $client->isAppEnabled('WiMPDK') ) ? 'wimp' : undef;
-}
-
-sub protocol { 'wimp' }
-
-sub searchUrl {
-	my ($class) = @_;
-	sprintf('/api/wimp/v1/opml/search?q=%s', URI::Escape::uri_escape_utf8($class->args->{title}));
-}
-
-1;
-
-
-package Plugins::LastMix::Services::Deezer;
-
-use base qw(Plugins::LastMix::Services::Base);
-use JSON::XS::VersionOneAndTwo;
-
-use constant ACCOUNTS_URL  => '/api/deezer/v1/opml/library/getAccounts';
-
-my $isPremium;
-sub init {
-	return if $Plugins::LastMix::Plugin::NOMYSB;
-	return unless Slim::Utils::PluginManager->isEnabled('Slim::Plugin::Deezer::Plugin');
-
-	Slim::Networking::SqueezeNetwork->new(
-		sub {
-			my $http = shift;
-			my $accounts = eval { from_json( $http->content ) };
-			$isPremium = scalar @$accounts unless $@;
-		},
-		sub {},
-	)->get(Slim::Networking::SqueezeNetwork->url(ACCOUNTS_URL));
-}
-
-sub isEnabled {
-	my ($class, $client) = @_;
-
-	return unless $isPremium && $client;
-	return $client->isAppEnabled('Deezer') ? 'deezer' : undef;
-}
-
-sub protocol { 'deezer' }
-
-sub searchUrl {
-	my ($class) = @_;
-	sprintf('/api/deezer/v1/opml/search_tracks?q=%s', URI::Escape::uri_escape_utf8($class->args->{title}));
-}
-
-1;
-
-package Plugins::LastMix::Services::Napster;
-
-use base qw(Plugins::LastMix::Services::Base);
-
-sub isEnabled {
-	my ($class, $client) = @_;
-
-	return if $Plugins::LastMix::Plugin::NOMYSB;
-
-	return if !$client;
-
-	return if !$client->isa('Slim::Player::Squeezebox2') || $client->model eq 'squeezeplay';
-
-	return unless Slim::Utils::PluginManager->isEnabled('Slim::Plugin::RhapsodyDirect::Plugin');
-
-	return if !($client->isAppEnabled('RhapsodyDirect') || $client->isAppEnabled('RhapsodyEU'));
-
-	return 'napster';
-}
-
-sub protocol { 'rhapd' }
-
-sub searchUrl {
-	my ($class) = @_;
-	sprintf('/api/rhapsody/v1/opml/search/fastFindTracks?q=%s', URI::Escape::uri_escape_utf8($class->args->{title}));
-}
 
 1;
