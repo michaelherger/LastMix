@@ -4,8 +4,10 @@ use strict;
 use Tie::Cache::LRU;
 
 use base qw(Slim::Plugin::OPMLBased);
+use URI::Escape qw(uri_unescape);
 
 use Slim::Utils::Log;
+use Slim::Utils::Prefs;
 use Slim::Utils::Strings qw(cstring);
 
 # XXX - make this user-adjustable? Large number risks to create undesired mix if seed was
@@ -27,10 +29,24 @@ my $log = Slim::Utils::Log->addLogCategory({
 	'defaultLevel' => 'WARN',
 	'description'  => 'PLUGIN_LASTMIX_NAME',
 });
+my $lfmPrefs = preferences('plugin.audioscrobbler');
 
 # Only load the large parts of the code once we know Don't Stop The Music has been initialized
 sub postinitPlugin {
 	my $class = shift;
+
+	if ( NOMYSB && Slim::Utils::PluginManager->isEnabled('Slim::Plugin::AudioScrobbler::Plugin') ) {
+		Slim::Plugin::AudioScrobbler::Plugin::registerLoveHandler(sub {
+			my ( $client, $item ) = @_;
+
+			my $username = $lfmPrefs->client($client)->get('account');
+
+			Plugins::LastMix::LFM->loveTrack(sub {
+				my $result = shift;
+				$log->error("Failed to love track") if !$result || keys %$result;
+			}, $username, uri_unescape($item->{a}), uri_unescape($item->{t}));
+		});
+	}
 
 	# if the user has the Don't Stop The Music plugin enabled, register ourselves
 	if ( Slim::Utils::PluginManager->isEnabled('Slim::Plugin::DontStopTheMusic::Plugin') ) {

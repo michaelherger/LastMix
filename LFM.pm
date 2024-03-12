@@ -2,6 +2,7 @@ package Plugins::LastMix::LFM;
 
 use strict;
 use JSON::XS::VersionOneAndTwo;
+use Digest::MD5 qw(md5_hex);
 use URI::Escape qw(uri_escape_utf8);
 
 use Slim::Utils::Cache;
@@ -14,6 +15,7 @@ use constant LASTFM_MAX_ITEMS => 149;
 
 my $cache = Slim::Utils::Cache->new;
 my $log = logger('plugin.lastmix');
+my $lfmPrefs = preferences('plugin.audioscrobbler');
 my $aid;
 
 sub init {
@@ -23,7 +25,6 @@ sub init {
 sub getUsername {
 	my ( $class, $client ) = @_;
 
-	my $lfmPrefs = preferences('plugin.audioscrobbler');
 	my $username = $lfmPrefs->client($client->master)->get('account') if $client;
 
 	if (!$username) {
@@ -37,6 +38,68 @@ sub getUsername {
 	}
 
 	return $username;
+}
+
+sub getPasswordHash {
+	my ( $class, $username ) = @_;
+	my $accounts = $lfmPrefs->get('accounts') || [];
+
+	my ($password) = map {
+		$_->{password}
+	} grep {
+		$_->{username} eq $username
+	} @$accounts;
+
+	return $password;
+}
+
+# get a session using a username and authToken
+sub getMobileSession {
+	my ( $class, $cb, $username ) = @_;
+
+	my $result = _call( {
+		method => 'auth.getMobileSession',
+		_verb   => 'POST',
+		username  => $username,
+		authToken => md5_hex($username . $class->getPasswordHash($username)),
+		_signed   => 1,
+		_nocache  => 1,
+	}, sub {
+		my $result = shift;
+
+		my $sessionKey;
+		eval {
+			$sessionKey = $result->{session}->{key};
+		};
+
+		$@ && $log->error("failed to get session key:" . $@);
+
+		$cb->($sessionKey);
+	} );
+}
+
+sub loveTrack {
+	my ( $class, $cb, $username, $artist, $title ) = @_;
+
+	$class->getMobileSession(sub {
+		my $sessionKey = shift;
+
+		if ($sessionKey) {
+			_call( {
+				method => 'track.love',
+				_verb   => 'POST',
+				_nocache => 1,
+				track   => $title,
+				artist  => $artist,
+				sk      => $sessionKey,
+				_signed => 1,
+			}, $cb );
+
+			return;
+		}
+
+		$cb->();
+	}, 'mherger');
 }
 
 sub getSimilarTracks {
@@ -264,22 +327,42 @@ sub _call {
 	my ($params, $cb) = @_;
 
 	$params ||= {};
-	my @query;
+	my $verb = delete $params->{_verb} || 'GET';
+
+	my @query = ('api_key=' . aid());
 
 	while (my ($k, $v) = each %$params) {
 		next if $k =~ /^_/;		# ignore keys starting with an underscore
 		push @query, $k . '=' . uri_escape_utf8($v);
 	}
 
-	my $url = BASE_URL . '?' . join( '&', sort @query, 'api_key=' . aid(), 'format=json' );
+	my $url = BASE_URL;
+
+	# sign request if needed
+	if ( delete $params->{_signed} ) {
+		my %p = %{{ %$params, api_key => aid() }};
+
+		my $sig = join('', map {
+			$_ . $p{$_}
+		} grep {
+			$_ !~ /^_/
+		} sort keys %p );
+
+		push @query, 'api_sig=' . md5_hex($sig . (Plugins::LastMix::Plugin->_pluginDataFor('id3') =~ s/-//rg));
+		$url =~ s/^http:/https:/;
+	}
+
+	push @query, 'format=json';
+	my $query = join('&', sort @query);
+	$url .= "?$query" if $verb eq 'GET';
 	$url =~ s/\?$//;
 
-	if ( !$params->{_nocache} && (my $cached = $cache->get($url)) ) {
+	if ( !$params->{_nocache} && (my $cached = $cache->get($query)) ) {
 		$cb->($cached);
 		return;
 	}
 
-	main::INFOLOG && $log->is_info && $log->info((main::SCANNER ? 'Sync' : 'Async') . ' API call: GET ' . _debug($url) );
+	main::INFOLOG && $log->is_info && $log->info("API call: $verb " . _debug($url) );
 
 	$params->{timeout} ||= 15;
 
@@ -303,16 +386,23 @@ sub _call {
 
 		main::DEBUGLOG && $log->is_debug && $log->debug(Data::Dump::dump($result));
 
-		$cache->set($url, $result, CACHE_TTL) if !$params->{_nocache};
+		$cache->set($query, $result, CACHE_TTL) if !$params->{_nocache};
 
 		$cb->($result);
 	};
 
-	Slim::Networking::SimpleAsyncHTTP->new(
+	my $http = Slim::Networking::SimpleAsyncHTTP->new(
 		$cb2,
 		$cb2,
 		$params
-	)->get($url);
+	);
+
+	if ($verb eq 'POST') {
+		$http->post($url, 'Content-Type' => 'application/x-www-form-urlencoded', $query);
+	}
+	else {
+		$http->get($url);
+	}
 }
 
 sub aid {
