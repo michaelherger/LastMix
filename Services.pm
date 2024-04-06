@@ -6,11 +6,7 @@ use Slim::Utils::Log;
 
 my $log = logger('plugin.lastmix');
 
-my @serviceHandlers = qw(
-	Plugins::LastMix::Services::Tidal
-	Plugins::LastMix::Services::Deezer
-	Plugins::LastMix::Services::Napster
-);
+my @serviceHandlers;
 
 my $serviceHandler;
 
