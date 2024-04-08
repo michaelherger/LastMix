@@ -15,7 +15,6 @@ use Slim::Utils::Strings qw(cstring);
 # lookups.
 use constant MAX_TRACKS => 5;
 
-use constant NOMYSB => Slim::Utils::Versions->compareVersions($::VERSION, '7.9') >= 0 && main::NOMYSB() ? 1 : 0;
 use constant CAN_BALANCED_SHUFFLE => UNIVERSAL::can('Slim::Player::Playlist', 'balancedShuffle') ? 1 : 0;
 
 # we're going to cache some information about our artists during the resolving process
@@ -35,7 +34,7 @@ my $lfmPrefs = preferences('plugin.audioscrobbler');
 sub postinitPlugin {
 	my $class = shift;
 
-	if ( NOMYSB && Slim::Utils::PluginManager->isEnabled('Slim::Plugin::AudioScrobbler::Plugin') ) {
+	if ( Slim::Utils::PluginManager->isEnabled('Slim::Plugin::AudioScrobbler::Plugin') ) {
 		Slim::Plugin::AudioScrobbler::Plugin::registerLoveHandler(sub {
 			my ( $client, $item ) = @_;
 
