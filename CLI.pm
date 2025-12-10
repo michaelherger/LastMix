@@ -33,24 +33,38 @@ sub _cliMix {
 	}
 
 	my $tags = $request->getParam('tags');
+	my $artist = $request->getParam('artist');
 
-	if (!$tags) {
+	if (!$tags && !$artist) {
 		$request->setStatusBadParams();
 		return;
 	}
 
 	Plugins::LastMix::Plugin::initClientPluginData($client);
 
-	my %tags = ( map { s/\+/ /g; URI::Escape::uri_unescape($_) => 1 } split(',', $tags) );
-	$client->pluginData(tags => \%tags);
+	if ($artist) {
+		Plugins::LastMix::DontStopTheMusic::getArtistTracks($client, sub {
+			my ($client, $tracks) = @_;
 
-	foreach my $tag (keys %tags) {
-		Plugins::LastMix::LFM->getTagTopTracks(sub {
-			_gotTagTracks($client, $tag, $request, @_);
-		}, {
-			tag => $tag,
-			limit => LASTFM_MAX_ITEMS
-		});
+			my $cmd = $request->getRequest(1);
+			$client->execute(['playlist', $cmd . 'tracks', 'listRef', $tracks]);
+
+			$request->setStatusDone();
+		}, [ split(',', $artist) ]);
+	}
+	else {
+		my %tags = ( map { s/\+/ /g; URI::Escape::uri_unescape($_) => 1 } split(',', $tags) );
+
+		$client->pluginData(tags => \%tags);
+
+		foreach my $tag (keys %tags) {
+			Plugins::LastMix::LFM->getTagTopTracks(sub {
+				_gotTagTracks($client, $tag, $request, @_);
+			}, {
+				tag => $tag,
+				limit => LASTFM_MAX_ITEMS
+			});
+		}
 	}
 }
 

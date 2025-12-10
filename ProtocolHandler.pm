@@ -14,11 +14,11 @@ sub overridePlayback {
 		return if $client->controller()->playingSongDuration()
 	}
 
-	my ($command, $tags) = $url =~ m{^lastmix://(play|add)\?tags=(.*)};
+	my ($command, $tag, $tags) = $url =~ m{^lastmix://(play|add)\?(tags|artist)=(.*)};
 
 	return unless $tags;
 
-	$client->execute(["lastmix", $command, "tags:$tags"]);
+	$client->execute(["lastmix", $command, "$tag:$tags"]);
 
 	return 1;
 }
@@ -36,8 +36,11 @@ sub getMetadataFor {
 
 	my $title = $client->string('PLUGIN_LASTMIX_NAME');
 
-	if ( my ($genres) = $url =~ m{lastmix://(?:play|add|tags)\?tags=(.*)} ) {
-		$title .= ' (' . join(', ', map { s/^\s+|\s+$//g; ucfirst($_) } split(',', $genres)) . ')';
+	if ( my ($arguments) = $url =~ m{lastmix://(?:play|add|tags)\?(?:tags|artist)=(.*)} ) {
+		$title .= ' (' . join(', ', map {
+			s/^\s+|\s+$//g;
+			ucfirst(URI::Escape::uri_unescape($_))
+		} split(',', $arguments)) . ')';
 	}
 
 	return {

@@ -6,6 +6,7 @@ use Tie::Cache::LRU;
 use base qw(Slim::Plugin::OPMLBased);
 use URI::Escape qw(uri_unescape);
 
+use Slim::Menu::ArtistInfo;
 use Slim::Utils::Log;
 use Slim::Utils::Prefs;
 use Slim::Utils::Strings qw(cstring);
@@ -34,6 +35,11 @@ my $lfmPrefs = preferences('plugin.audioscrobbler');
 sub postinitPlugin {
 	my $class = shift;
 
+	Slim::Menu::ArtistInfo->registerInfoProvider( lastMixArtistMix => (
+		after => 'top',
+		func  => \&artistInfoMenu,
+	) );
+
 	if ( Slim::Utils::PluginManager->isEnabled('Slim::Plugin::AudioScrobbler::Plugin') ) {
 		Slim::Plugin::AudioScrobbler::Plugin::registerLoveHandler(sub {
 			my ( $client, $item ) = @_;
@@ -50,7 +56,7 @@ sub postinitPlugin {
 	# if the user has the Don't Stop The Music plugin enabled, register ourselves
 	if ( Slim::Utils::PluginManager->isEnabled('Slim::Plugin::DontStopTheMusic::Plugin') ) {
 		if ( !$deDupeClass->can('deDupe') ) {
-			$log->error('Your Logitech Media Server is OUTDATED. Please update!');
+			$log->error('Your Lyrion Music Server is OUTDATED. Please update!');
 			require Plugins::LastMix::DeDupe;
 			$deDupeClass = 'Plugins::LastMix::DeDupe';
 		}
@@ -103,6 +109,20 @@ sub handleFeed {
 			url => \&topTagsFeed,
 		}]
 	});
+}
+
+sub artistInfoMenu {
+	my ( $client, $url, $artist, $remoteMeta ) = @_;
+
+	my $artistName = ($artist && $artist->name) || (ref $remoteMeta && $remoteMeta->{artist}) || return;
+
+	return [
+		{
+			name => cstring($client, 'PLUGIN_LASTMIX_ARTISTMIX'),
+			url  => 'lastmix://play?artist=' . URI::Escape::uri_escape($artistName),
+			type => 'audio',
+		}
+	];
 }
 
 sub topTagsFeed {
