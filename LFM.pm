@@ -10,7 +10,7 @@ use Slim::Utils::Log;
 use Slim::Utils::Prefs;
 
 use constant BASE_URL => 'http://ws.audioscrobbler.com/2.0/';
-use constant CACHE_TTL => 60*60*24;
+use constant CACHE_TTL => 30*60;
 use constant LASTFM_MAX_ITEMS => 149;
 
 my $cache = Slim::Utils::Cache->new;
@@ -358,6 +358,8 @@ sub _call {
 	$url =~ s/\?$//;
 
 	if ( !$params->{_nocache} && (my $cached = $cache->get($query)) ) {
+		main::INFOLOG && $log->is_info && $log->info("Returning cached result for: " . _debug($url) );
+		main::DEBUGLOG && $log->is_debug && $log->debug(Data::Dump::dump($cached));
 		$cb->($cached);
 		return;
 	}
@@ -374,7 +376,14 @@ sub _call {
 	my $cb2 = sub {
 		my $response = shift;
 
-		main::DEBUGLOG && $log->is_debug && $response->code !~ /2\d\d/ && $log->debug(_debug(Data::Dump::dump($response, @_)));
+		if ($response->code >= 400) {
+			$log->error(sprintf("LastMix API HTTP error %s: %s", $response->code, $response->message));
+			main::INFOLOG && $log->is_info $log->info(_debug(Data::Dump::dump($response, @_)));
+		}
+		elsif (main::DEBUGLOG && $log->is_debug && $response->code !~ /2\d\d/) {
+			$log->debug(_debug(Data::Dump::dump($response, @_)));
+		}
+
 		my $result = eval { from_json( $response->content ) };
 
 		$result ||= {};
@@ -384,9 +393,19 @@ sub _call {
 			 $result->{error} = $@;
 		}
 
-		main::DEBUGLOG && $log->is_debug && $log->debug(Data::Dump::dump($result));
+		if ($result->{error}) {
+			if (main::INFOLOG) {
+				$log->error(Data::Dump::dump($result));
+			}
+			else {
+				$log->error("LastMix API error " . $result->{error} . ": " . $result->{message});
+			}
+		}
+		elsif (main::DEBUGLOG && $log->is_debug) {
+			$log->debug(Data::Dump::dump($result));
+		}
 
-		$cache->set($query, $result, CACHE_TTL) if !$params->{_nocache};
+		$cache->set($query, $result, CACHE_TTL) if !$params->{_nocache} && !$result->{error};
 
 		$cb->($result);
 	};

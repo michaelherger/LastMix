@@ -306,8 +306,8 @@ sub getArtistTracks {
 			if ( $results && ref $results ) {
 				_parseTracks($client, $results, 'toptracks', 'track');
 			}
-			else {
-				warn Data::Dump::dump($results);
+			elsif (main::INFOLOG) {
+				$log->warn(Data::Dump::dump($results));
 			}
 
 			if ( @$artists ) {
