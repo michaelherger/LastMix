@@ -378,7 +378,7 @@ sub _call {
 
 		if ($response->code >= 400) {
 			$log->error(sprintf("LastMix API HTTP error %s: %s", $response->code, $response->message));
-			main::INFOLOG && $log->is_info $log->info(_debug(Data::Dump::dump($response, @_)));
+			main::INFOLOG && $log->is_info && $log->info(_debug(Data::Dump::dump($response, @_)));
 		}
 		elsif (main::DEBUGLOG && $log->is_debug && $response->code !~ /2\d\d/) {
 			$log->debug(_debug(Data::Dump::dump($response, @_)));
