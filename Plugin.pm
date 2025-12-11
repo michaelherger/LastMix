@@ -119,7 +119,7 @@ sub artistInfoMenu {
 	return [
 		{
 			name => cstring($client, 'PLUGIN_LASTMIX_ARTISTMIX'),
-			url  => 'lastmix://play?artist=' . URI::Escape::uri_escape($artistName),
+			url  => 'lastmix://play?dstm=1&artist=' . URI::Escape::uri_escape($artistName),
 			type => 'audio',
 		}
 	];

@@ -4,6 +4,7 @@ use strict;
 
 use Slim::Control::Request;
 use Slim::Utils::Log;
+use Slim::Utils::Prefs;
 
 use Plugins::LastMix::Plugin;
 use Plugins::LastMix::LFM;
@@ -44,12 +45,8 @@ sub _cliMix {
 
 	if ($artist) {
 		Plugins::LastMix::DontStopTheMusic::getArtistTracks($client, sub {
-			my ($client, $tracks) = @_;
-
-			my $cmd = $request->getRequest(1);
-			$client->execute(['playlist', $cmd . 'tracks', 'listRef', $tracks]);
-
-			$request->setStatusDone();
+			my $tracks = $_[1];
+			_gotArtistTracks($client, $artist, $request, $tracks);
 		}, [ split(',', $artist) ]);
 	}
 	else {
@@ -66,6 +63,38 @@ sub _cliMix {
 			});
 		}
 	}
+}
+
+sub _gotArtistTracks {
+	my ($client, $artist, $request, $tracks) = @_;
+
+	if ( !($tracks && scalar @$tracks) ) {
+		main::INFOLOG && $log->is_info && $log->info("LastFM mix failed, try local files to get started");
+
+		my $randomFunction = Slim::Utils::OSDetect->getOS()->sqlHelperClass()->randomFunction();
+
+		foreach my $artistName ( split(',', $artist) ) {
+			my $artistRequest = Slim::Control::Request->new( undef, [ 'artists', 0, 1, 'search:' . URI::Escape::uri_unescape($artistName) ] );
+			$artistRequest->execute();
+
+			foreach my $artistId ( @{ $artistRequest->getResult('artists_loop') || [] } ) {
+				my $tracksRequest = Slim::Control::Request->new( undef, [ 'titles', 0, Plugins::LastMix::Plugin::MAX_TRACKS, 'artist_id:' . $artistId->{id}, "sort:sql=$randomFunction", 'tags:u' ] );
+				$tracksRequest->execute();
+				push @$tracks, map { $_->{url} } @{ $tracksRequest->getResult('titles_loop') || [] };
+			}
+
+			main::idleStreams();
+		}
+	}
+
+	my $cmd = $request->getRequest(1);
+	$client->execute(['playlist', $cmd . 'tracks', 'listRef', $tracks]);
+
+	if ( $request->getParam('dstm') && Slim::Utils::PluginManager->isEnabled('Slim::Plugin::DontStopTheMusic::Plugin') ) {
+		preferences('plugin.dontstopthemusic')->client($client)->set('provider', 'PLUGIN_LASTMIX_DSTM_ITEM');
+	}
+
+	$request->setStatusDone();
 }
 
 sub _gotTagTracks {

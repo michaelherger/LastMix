@@ -2,6 +2,9 @@ package Plugins::LastMix::ProtocolHandler;
 
 use strict;
 
+use URI;
+use URI::QueryParam;
+
 use Plugins::LastMix::LFM;
 
 sub overridePlayback {
@@ -14,11 +17,27 @@ sub overridePlayback {
 		return if $client->controller()->playingSongDuration()
 	}
 
-	my ($command, $tag, $tags) = $url =~ m{^lastmix://(play|add)\?(tags|artist)=(.*)};
+	my ($command) = $url =~ m{^lastmix://(play|add)\?};
 
-	return unless $tags;
+	return unless $command;
 
-	$client->execute(["lastmix", $command, "$tag:$tags"]);
+	my $uri = URI->new($url);
+	my $params = $uri->query_form_hash;
+
+	my $cmd = ['lastmix', $command];
+	push @$cmd, 'dstm:1' if $params->{dstm};
+
+	if (my $artist = $params->{artist}) {
+		push @$cmd, "artist:$artist";
+	}
+	elsif (my $tags = $params->{tags}) {
+		push @$cmd, "tags:$tags";
+	}
+	else {
+		return;
+	}
+
+	$client->execute($cmd);
 
 	return 1;
 }
@@ -36,7 +55,7 @@ sub getMetadataFor {
 
 	my $title = $client->string('PLUGIN_LASTMIX_NAME');
 
-	if ( my ($arguments) = $url =~ m{lastmix://(?:play|add|tags)\?(?:tags|artist)=(.*)} ) {
+	if ( my ($arguments) = $url =~ m{lastmix://(?:play|add|tags)\?.*(?:tags|artist)=(.*)} ) {
 		$title .= ' (' . join(', ', map {
 			s/^\s+|\s+$//g;
 			ucfirst(URI::Escape::uri_unescape($_))
