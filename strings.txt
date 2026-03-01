@@ -5,16 +5,19 @@ PLUGIN_LASTMIX_DESC
 	DE	LastMix bietet die Möglichkeit, mit Hilfe von Last.fm automatische Mixes für das "Don't Stop The Music" Plugin zu erstellen.
 	EN	LastMix allows you to create Last.fm based mixes for the "Don't Stop The Music" plugin.
 	FR	LastMix, à l'aide de Last.fm, permet de créer automatiquement des compilations personnalisées pour le plugin "N'arrêtez pas la musique".
+	NL	Met LastMix kun je op Last.fm gebaseerde mixen maken voor de plugin "Don't Stop The Music".
 
 PLUGIN_LASTMIX_DSTM_MYMUSIC_ONLY
 	DE	LastMix (nur "Eigene Musik")
 	EN	LastMix ("My Music" only)
 	FR	LastMix ("Ma musique" uniquement)
+	NL	LastMix (alleen "Mijn Muziek")
 
 PLUGIN_LASTMIX_DSTM_CURRENT_LIBRARYVIEW_ONLY
 	DE	LastMix (nur aktuelle Bibliotheksansicht)
 	EN	LastMix (current Library View only)
 	FR	LastMix (bibliothèque thématique active uniquement)
+	NL	LastMix (alleen huidige bibliotheek weergave)
 
 # This is no longer "local" music only, as we're integrating online libraries.
 # A "local files only" doesn't make much sense, as Last.fm needs online access anyway.
@@ -22,26 +25,31 @@ PLUGIN_LASTMIX_DSTM_CURRENT_LIBRARYVIEW_ONLY
 #	DE	LastMix (nur lokale Musikdateien)
 #	EN	LastMix (local music files only)
 #	FR	LastMix (fichiers locaux uniquement)
+#	NL	LastMix (alleen lokale muziek)
 
 PLUGIN_LASTMIX_DSTM_ITEM
 	DE	LastMix - Musikwiedergabe mit Hilfe von Last.fm nie anhalten.
 	EN	LastMix - Don't Stop The Music support using Last.fm.
 	FR	LastMix - N'arrêtez jamais la lecture de musique en utilisant Last.fm.
+	NL	LastMix - Met Last.fm onderbreek je nooit de muziekweergave.
 
 PLUGIN_LASTMIX_DSTM_YOUR_FAVORITE_ARTISTS
 	DE	LastMix - Deine Lieblingskünstler
 	EN	LastMix - Your Favorite Artists
 	FR	LastMix - Vos artistes préférés
+	NL	LastMix - Jouw favoriete artiesten
 
 PLUGIN_LASTMIX_TOP_TAGS_BY_COUNT
 	DE	Top Tags (nach Häufigkeit)
 	EN	Top Tags (by count)
 	FR	Top Tags (par fréquence)
+	NL	Top Tags (op basis van aantal)
 
 PLUGIN_LASTMIX_TOP_TAGS_ALPAHBETICALLY
 	DE	Top Tags (alphabetisch sortiert)
 	EN	Top Tags (in alphabetical order)
 	FR	Top Tags (par ordre alphabétique)
+	NL	Top Tags (alfabetisch)
 
 PLUGIN_LASTMIX_ARTISTMIX
 	CS	Mix interpretů (LastMix)
