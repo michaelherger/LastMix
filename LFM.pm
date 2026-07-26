@@ -1,7 +1,7 @@
 package Plugins::LastMix::LFM;
 
 use strict;
-use JSON::XS::VersionOneAndTwo;
+use JSON::XS;
 use Digest::MD5 qw(md5_hex);
 use URI::Escape qw(uri_escape_utf8);
 
@@ -384,7 +384,7 @@ sub _call {
 			$log->debug(_debug(Data::Dump::dump($response, @_)));
 		}
 
-		my $result = eval { from_json( $response->content ) };
+		my $result = eval { decode_json( $response->content ) };
 
 		$result ||= {};
 
