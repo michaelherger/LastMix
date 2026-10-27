@@ -66,3 +66,51 @@ PLUGIN_LASTMIX_ARTISTMIX
 	PL	Składanka z różnych wykonawców (LastMix)
 	RU	Микс по исполнителям (LastMix)
 	SV	Artistmix (LastMix)
+
+PLUGIN_LASTMIX_USE_CUSTOM_API_KEY
+	DE	Eigenen Last.fm API-Schlüssel verwenden
+	EN	Use your own Last.fm API key
+	FR	Utiliser votre propre clé API Last.fm
+	NL	Gebruik je eigen Last.fm API-sleutel
+
+PLUGIN_LASTMIX_USE_CUSTOM_API_KEY_DESC
+	DE	Standardmässig teilen sich alle LastMix-Benutzer denselben API-Schlüssel. Bei hoher Auslastung kann Last.fm dessen Anfragen begrenzen ("Rate Limit Exceeded"), und LastMix liefert dann keine Titel mehr. Mit einem eigenen, kostenlosen API-Schlüssel bist du davon nicht betroffen. Ist diese Option deaktiviert, wird der mit dem Plugin gelieferte Schlüssel verwendet.
+	EN	By default all LastMix users share the same API key. When it's under heavy use Last.fm may throttle its requests ("Rate Limit Exceeded"), and LastMix stops returning tracks. Using your own free API key avoids this. If this option is disabled, the key shipped with the plugin is used.
+	FR	Par défaut, tous les utilisateurs de LastMix partagent la même clé API. En cas de forte sollicitation, Last.fm peut en limiter les requêtes ("Rate Limit Exceeded") et LastMix ne renvoie alors plus de morceaux. Utiliser votre propre clé API, gratuite, évite ce problème. Si cette option est désactivée, la clé fournie avec le plugin est utilisée.
+	NL	Standaard delen alle LastMix-gebruikers dezelfde API-sleutel. Bij intensief gebruik kan Last.fm de aanvragen ervan beperken ("Rate Limit Exceeded"), waardoor LastMix geen nummers meer teruggeeft. Met je eigen, gratis API-sleutel heb je hier geen last van. Als deze optie is uitgeschakeld, wordt de met de plugin meegeleverde sleutel gebruikt.
+
+PLUGIN_LASTMIX_API_KEY_HOWTO
+	DE	So erhältst du einen API-Schlüssel
+	EN	How to get an API key
+	FR	Comment obtenir une clé API
+	NL	Zo krijg je een API-sleutel
+
+PLUGIN_LASTMIX_API_KEY_HOWTO_DESC
+	DE	<ol><li>Melde dich bei Last.fm an (oder erstelle ein kostenloses Konto).</li><li>Öffne <a href="https://www.last.fm/api/account/create" target="_blank">https://www.last.fm/api/account/create</a>.</li><li>Gib eine Kontakt-E-Mail und einen Anwendungsnamen ein (z.B. "LastMix für mein LMS"). Beschreibung, Callback-URL und Homepage kannst du leer lassen.</li><li>Bestätige das Formular und kopiere den angezeigten "API key" und das "Shared secret" in die Felder unten. Deine API-Konten findest du jederzeit unter <a href="https://www.last.fm/api/accounts" target="_blank">https://www.last.fm/api/accounts</a>.</li></ol>
+	EN	<ol><li>Log in to Last.fm (or create a free account).</li><li>Go to <a href="https://www.last.fm/api/account/create" target="_blank">https://www.last.fm/api/account/create</a>.</li><li>Enter a contact email and an application name (eg. "LastMix for my LMS"). You can leave the description, callback URL and homepage empty.</li><li>Submit the form, then copy the "API key" and "Shared secret" it shows into the fields below. You can find your API accounts at any time on <a href="https://www.last.fm/api/accounts" target="_blank">https://www.last.fm/api/accounts</a>.</li></ol>
+	FR	<ol><li>Connectez-vous à Last.fm (ou créez un compte gratuit).</li><li>Rendez-vous sur <a href="https://www.last.fm/api/account/create" target="_blank">https://www.last.fm/api/account/create</a>.</li><li>Saisissez une adresse e-mail de contact et un nom d'application (par ex. "LastMix pour mon LMS"). La description, l'URL de callback et la page d'accueil peuvent rester vides.</li><li>Validez le formulaire, puis copiez la "API key" et le "Shared secret" affichés dans les champs ci-dessous. Vos comptes API restent consultables sur <a href="https://www.last.fm/api/accounts" target="_blank">https://www.last.fm/api/accounts</a>.</li></ol>
+	NL	<ol><li>Log in bij Last.fm (of maak een gratis account aan).</li><li>Ga naar <a href="https://www.last.fm/api/account/create" target="_blank">https://www.last.fm/api/account/create</a>.</li><li>Vul een contact-e-mailadres en een applicatienaam in (bijv. "LastMix voor mijn LMS"). Beschrijving, callback-URL en homepage mag je leeg laten.</li><li>Verstuur het formulier en kopieer de getoonde "API key" en het "Shared secret" naar de velden hieronder. Je API-accounts vind je altijd terug op <a href="https://www.last.fm/api/accounts" target="_blank">https://www.last.fm/api/accounts</a>.</li></ol>
+
+PLUGIN_LASTMIX_API_KEY
+	DE	API-Schlüssel
+	EN	API key
+	FR	Clé API
+	NL	API-sleutel
+
+PLUGIN_LASTMIX_API_KEY_DESC
+	DE	Der "API key" deines Last.fm API-Kontos. Bleibt das Feld leer, wird weiterhin der Schlüssel des Plugins verwendet.
+	EN	The "API key" of your Last.fm API account. If left empty, the plugin's key is still used.
+	FR	La "API key" de votre compte API Last.fm. Si le champ est vide, la clé du plugin continue d'être utilisée.
+	NL	De "API key" van je Last.fm API-account. Als het veld leeg blijft, wordt nog steeds de sleutel van de plugin gebruikt.
+
+PLUGIN_LASTMIX_API_SECRET
+	DE	Shared Secret
+	EN	Shared secret
+	FR	Secret partagé (Shared secret)
+	NL	Shared secret (gedeeld geheim)
+
+PLUGIN_LASTMIX_API_SECRET_DESC
+	DE	Das "Shared secret" deines Last.fm API-Kontos. Es wird nur für signierte Anfragen benötigt (Titel als Lieblingstitel markieren). Fehlt es, werden diese Anfragen weiterhin mit dem Schlüssel des Plugins gestellt.
+	EN	The "Shared secret" of your Last.fm API account. It's only needed for signed requests (loving tracks). If missing, those requests keep using the plugin's key.
+	FR	Le "Shared secret" de votre compte API Last.fm. Il n'est nécessaire que pour les requêtes signées (marquer un morceau comme favori). S'il est absent, ces requêtes continuent d'utiliser la clé du plugin.
+	NL	Het "Shared secret" van je Last.fm API-account. Het is alleen nodig voor ondertekende aanvragen (nummers als favoriet markeren). Als het ontbreekt, gebruiken die aanvragen nog steeds de sleutel van de plugin.

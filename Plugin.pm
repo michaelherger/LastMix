@@ -31,9 +31,20 @@ my $log = Slim::Utils::Log->addLogCategory({
 });
 my $lfmPrefs = preferences('plugin.audioscrobbler');
 
+preferences('plugin.lastmix')->init({
+	useCustomApiKey => 0,
+	apiKey          => '',
+	apiSecret       => '',
+});
+
 # Only load the large parts of the code once we know Don't Stop The Music has been initialized
 sub postinitPlugin {
 	my $class = shift;
+
+	if (main::WEBUI) {
+		require Plugins::LastMix::Settings;
+		Plugins::LastMix::Settings->new();
+	}
 
 	Slim::Menu::ArtistInfo->registerInfoProvider( lastMixArtistMix => (
 		after => 'top',
