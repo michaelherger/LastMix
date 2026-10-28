@@ -11,6 +11,7 @@
 	<id2>c6abc51e-847b-91ab-a0de-2ede33875e24</id2>
 	<id3>ea1bbf59-a0e5-e942-ca98-4bd241e6e4f9</id3>
 	<module>Plugins::LastMix::Plugin</module>
+	<optionsURL>plugins/LastMix/settings/basic.html</optionsURL>
 	<targetApplication>
 		<id>SqueezeCenter</id>
 		<maxVersion>*</maxVersion>

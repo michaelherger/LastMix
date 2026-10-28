@@ -8,6 +8,7 @@ use URI::Escape qw(uri_escape_utf8);
 use Slim::Utils::Cache;
 use Slim::Utils::Log;
 use Slim::Utils::Prefs;
+use Slim::Utils::Strings qw(string);
 
 use constant BASE_URL => 'http://ws.audioscrobbler.com/2.0/';
 use constant CACHE_TTL => 30*60;
@@ -16,6 +17,7 @@ use constant LASTFM_MAX_ITEMS => 149;
 my $cache = Slim::Utils::Cache->new;
 my $log = logger('plugin.lastmix');
 my $lfmPrefs = preferences('plugin.audioscrobbler');
+my $prefs = preferences('plugin.lastmix');
 my $aid;
 
 sub init {
@@ -329,7 +331,10 @@ sub _call {
 	$params ||= {};
 	my $verb = delete $params->{_verb} || 'GET';
 
-	my @query = ('api_key=' . aid());
+	my $signed = delete $params->{_signed};
+	my ($apiKey, $apiSecret) = _credentials($signed);
+
+	my @query = ('api_key=' . $apiKey);
 
 	while (my ($k, $v) = each %$params) {
 		next if $k =~ /^_/;		# ignore keys starting with an underscore
@@ -339,8 +344,8 @@ sub _call {
 	my $url = BASE_URL;
 
 	# sign request if needed
-	if ( delete $params->{_signed} ) {
-		my %p = %{{ %$params, api_key => aid() }};
+	if ( $signed ) {
+		my %p = %{{ %$params, api_key => $apiKey }};
 
 		my $sig = join('', map {
 			$_ . $p{$_}
@@ -348,7 +353,7 @@ sub _call {
 			$_ !~ /^_/
 		} sort keys %p );
 
-		push @query, 'api_sig=' . md5_hex($sig . (Plugins::LastMix::Plugin->_pluginDataFor('id3') =~ s/-//rg));
+		push @query, 'api_sig=' . md5_hex($sig . $apiSecret);
 		$url =~ s/^http:/https:/;
 	}
 
@@ -400,6 +405,11 @@ sub _call {
 			else {
 				$log->error("LastMix API error " . $result->{error} . ": " . $result->{message});
 			}
+
+			# rate limit exceeded - suggest using a personal API key if the shared one is in use
+			if ($result->{error} eq '29' && !usesCustomApiKey()) {
+				$log->warn(string('PLUGIN_LASTMIX_RATE_LIMIT_HINT'));
+			}
 		}
 		elsif (main::DEBUGLOG && $log->is_debug) {
 			$log->debug(Data::Dump::dump($result));
@@ -422,6 +432,24 @@ sub _call {
 	else {
 		$http->get($url);
 	}
+}
+
+# returns the API key and shared secret to be used: the user's own if configured, the plugin's otherwise
+sub _credentials {
+	my ($signed) = @_;
+
+	if ( usesCustomApiKey() ) {
+		my $secret = $prefs->get('apiSecret');
+
+		# signed requests need the shared secret matching the key - fall back to the plugin's credentials if it's missing
+		return ($prefs->get('apiKey'), $secret) if $secret || !$signed;
+	}
+
+	return (aid(), Plugins::LastMix::Plugin->_pluginDataFor('id3') =~ s/-//rg);
+}
+
+sub usesCustomApiKey {
+	return $prefs->get('useCustomApiKey') && $prefs->get('apiKey') ? 1 : 0;
 }
 
 sub aid {
