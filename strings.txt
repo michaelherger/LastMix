@@ -67,6 +67,12 @@ PLUGIN_LASTMIX_ARTISTMIX
 	RU	Микс по исполнителям (LastMix)
 	SV	Artistmix (LastMix)
 
+PLUGIN_LASTMIX_CUSTOM_API_KEY
+	DE	Last.fm API-Schlüssel
+	EN	Last.fm API key
+	FR	Clé API Last.fm
+	NL	Last.fm API-sleutel
+
 PLUGIN_LASTMIX_USE_CUSTOM_API_KEY
 	DE	Eigenen Last.fm API-Schlüssel verwenden
 	EN	Use your own Last.fm API key

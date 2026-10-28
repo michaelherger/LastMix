@@ -1,22 +1,23 @@
 [% PROCESS settings/header.html %]
 
-	[% WRAPPER setting title="PLUGIN_LASTMIX_USE_CUSTOM_API_KEY" desc="PLUGIN_LASTMIX_USE_CUSTOM_API_KEY_DESC" %]
+	[% WRAPPER setting title="PLUGIN_LASTMIX_CUSTOM_API_KEY" desc="PLUGIN_LASTMIX_USE_CUSTOM_API_KEY_DESC" %]
 		<input type="checkbox" name="pref_useCustomApiKey" id="pref_useCustomApiKey" value="1" [% IF prefs.pref_useCustomApiKey %]checked="checked"[% END %]
 			onclick="document.getElementById('lastmixCustomApiKey').style.display = this.checked ? '' : 'none';" />
 		<label for="pref_useCustomApiKey">[% "PLUGIN_LASTMIX_USE_CUSTOM_API_KEY" | string %]</label>
 	[% END %]
 
 	<div id="lastmixCustomApiKey" [% IF !prefs.pref_useCustomApiKey %]style="display:none"[% END %]>
-		[% WRAPPER setting title="PLUGIN_LASTMIX_API_KEY_HOWTO" desc="" %]
-			<div>[% "PLUGIN_LASTMIX_API_KEY_HOWTO_DESC" | string %]</div>
-		[% END %]
-
 		[% WRAPPER setting title="PLUGIN_LASTMIX_API_KEY" desc="PLUGIN_LASTMIX_API_KEY_DESC" %]
 			<input type="text" class="stdedit" name="pref_apiKey" id="pref_apiKey" value="[% prefs.pref_apiKey | html %]" size="40" autocomplete="off" spellcheck="false" />
 		[% END %]
 
 		[% WRAPPER setting title="PLUGIN_LASTMIX_API_SECRET" desc="PLUGIN_LASTMIX_API_SECRET_DESC" %]
 			<input type="text" class="stdedit" name="pref_apiSecret" id="pref_apiSecret" value="[% prefs.pref_apiSecret | html %]" size="40" autocomplete="off" spellcheck="false" />
+		[% END %]
+
+		[% WRAPPER setting title="" desc="" %]
+			<h1>[% "PLUGIN_LASTMIX_API_KEY_HOWTO" | string %]</h1>
+			<div>[% "PLUGIN_LASTMIX_API_KEY_HOWTO_DESC" | string %]</div>
 		[% END %]
 	</div>
 
