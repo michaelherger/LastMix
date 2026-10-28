@@ -114,3 +114,9 @@ PLUGIN_LASTMIX_API_SECRET_DESC
 	EN	The "Shared secret" of your Last.fm API account. It's only needed for signed requests (loving tracks). If missing, those requests keep using the plugin's key.
 	FR	Le "Shared secret" de votre compte API Last.fm. Il n'est nécessaire que pour les requêtes signées (marquer un morceau comme favori). S'il est absent, ces requêtes continuent d'utiliser la clé du plugin.
 	NL	Het "Shared secret" van je Last.fm API-account. Het is alleen nodig voor ondertekende aanvragen (nummers als favoriet markeren). Als het ontbreekt, gebruiken die aanvragen nog steeds de sleutel van de plugin.
+
+PLUGIN_LASTMIX_RATE_LIMIT_HINT
+	DE	Der von allen LastMix-Benutzern geteilte API-Schlüssel hat das Anfragelimit von Last.fm erreicht. Bitte verwende in den LastMix-Einstellungen deinen eigenen API-Schlüssel.
+	EN	The API key shared by all LastMix users has hit Last.fm's rate limit. Please consider using your own API key in the LastMix settings.
+	FR	La clé API partagée par tous les utilisateurs de LastMix a atteint la limite de requêtes de Last.fm. Pensez à utiliser votre propre clé API dans les réglages de LastMix.
+	NL	De API-sleutel die alle LastMix-gebruikers delen, heeft de aanvraaglimiet van Last.fm bereikt. Gebruik bij voorkeur je eigen API-sleutel in de LastMix-instellingen.

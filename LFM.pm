@@ -8,6 +8,7 @@ use URI::Escape qw(uri_escape_utf8);
 use Slim::Utils::Cache;
 use Slim::Utils::Log;
 use Slim::Utils::Prefs;
+use Slim::Utils::Strings qw(string);
 
 use constant BASE_URL => 'http://ws.audioscrobbler.com/2.0/';
 use constant CACHE_TTL => 30*60;
@@ -407,7 +408,7 @@ sub _call {
 
 			# rate limit exceeded - suggest using a personal API key if the shared one is in use
 			if ($result->{error} eq '29' && !usesCustomApiKey()) {
-				$log->warn("The API key shared by all LastMix users has hit Last.fm's rate limit. Please consider using your own API key in the LastMix settings.");
+				$log->warn(string('PLUGIN_LASTMIX_RATE_LIMIT_HINT'));
 			}
 		}
 		elsif (main::DEBUGLOG && $log->is_debug) {
